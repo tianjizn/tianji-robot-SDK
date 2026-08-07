@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['err_5factivemaster_0',['ERR_ActiveMaster',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8acf5c9eef293efcd76d7ecdbe0a0d0f54',1,'FXErrorCode.h']]],
+  ['err_5fbuslinkdown_1',['ERR_BusLinkDown',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ab0591f824c029920d9630a7590d84201',1,'FXErrorCode.h']]],
+  ['err_5femcy_2',['ERR_Emcy',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8acd4581fd04364aebf4266a2d09b38436',1,'FXErrorCode.h']]],
+  ['err_5fgyroinvalid_3',['ERR_GyroInvalid',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ae24504575e9291d0d3e7117abf79b12b',1,'FXErrorCode.h']]],
+  ['err_5finiconfig_4',['ERR_IniConfig',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ac5a721f533ef9101995815a61644fa53',1,'FXErrorCode.h']]],
+  ['err_5finternal_5',['ERR_Internal',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a81fb7140989a486053fb5349f84ec6ab',1,'FXErrorCode.h']]],
+  ['err_5fktask_6',['ERR_KTask',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a7c36cd8540ba788519ff61619b3acc3d',1,'FXErrorCode.h']]],
+  ['err_5floadini_7',['ERR_LoadIni',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ac9ff800f09c136e41792c210f04de4f0',1,'FXErrorCode.h']]],
+  ['err_5fmasterconfig_8',['ERR_MasterConfig',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8afdadb74f000ef7d390705ef92faf5531',1,'FXErrorCode.h']]],
+  ['err_5fpvtstreambroken_9',['ERR_PvtStreamBroken',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8abcfe530f03ab8c887f773db79386bcfc',1,'FXErrorCode.h']]],
+  ['err_5frequestenableservo_10',['ERR_RequestEnableServo',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a26bd5749cdfab42eee992554414aaaec',1,'FXErrorCode.h']]],
+  ['err_5frequestpositionmode_11',['ERR_RequestPositionMode',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a247daed27237e95465d49507bd9566bd',1,'FXErrorCode.h']]],
+  ['err_5frequesttorquemode_12',['ERR_RequestTorqueMode',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8abc3b9f38a6447db054433b9865b11c5f',1,'FXErrorCode.h']]],
+  ['err_5fresponsedisableservo_13',['ERR_ResponseDisableServo',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8aab4674cb939da3378abd16d5a7646a61',1,'FXErrorCode.h']]],
+  ['err_5fresponseenableservo_14',['ERR_ResponseEnableServo',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8aa33440a10ed131354397f0ba3e1632dc',1,'FXErrorCode.h']]],
+  ['err_5fresponsepositionmode_15',['ERR_ResponsePositionMode',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8abaf4dfa65924ed35e9e6c8ce4267a592',1,'FXErrorCode.h']]],
+  ['err_5fresponsetorquemode_16',['ERR_ResponseTorqueMode',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ab8bd30ab5f40c98c395d85d11202b8ea',1,'FXErrorCode.h']]],
+  ['err_5frttask_17',['ERR_RtTask',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a716d047612b7ab5fd2c67ca7cf7fc5b7',1,'FXErrorCode.h']]],
+  ['err_5fservo_18',['ERR_Servo',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a2d9af6a28870613bcbbc87d5df697ec6',1,'FXErrorCode.h']]],
+  ['err_5fservostateabnormal_19',['ERR_ServoStateAbnormal',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8aeb229e943549ed7e29b4ee1c266eee01',1,'FXErrorCode.h']]],
+  ['err_5fslaveconfig_20',['ERR_SlaveConfig',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a1732f4b953356cbcd6bfb35b3aca0065',1,'FXErrorCode.h']]],
+  ['err_5fslavepdoabnormal_21',['ERR_SlavePdoAbnormal',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8ae74ab4e16bc4b42c2ccbe8de23bf7f92',1,'FXErrorCode.h']]],
+  ['err_5fslavestateabnormal_22',['ERR_SlaveStateAbnormal',['../group__fx__system__errors.html#ggaf2959243b6d2d01bcc8c6cf6a3c1e1f8a4cd6f90eb110b15cfb1cd930ccf3998e',1,'FXErrorCode.h']]],
+  ['error_20codes_23',['FX System Error Codes',['../group__fx__system__errors.html',1,'']]]
+];
