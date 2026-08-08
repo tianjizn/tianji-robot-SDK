@@ -1,0 +1,8 @@
+# SystemGetLinkState.srv - Get communication link state
+# Corresponds to FX_L1_System_GetLinkState
+
+# Request (empty)
+---
+
+# Response
+int32 link_state             # 0=disconnected, 1=active, -1=active but can't receive

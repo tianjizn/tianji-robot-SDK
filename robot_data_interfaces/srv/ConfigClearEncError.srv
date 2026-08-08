@@ -1,0 +1,9 @@
+# Service for function: ConfigClearEncError
+# Request:
+uint8 obj_type
+uint32 axis_mask
+
+---
+
+# Response:
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,9 @@
+# Service for function: RuntimeRunTraj
+# Request: function input parameters
+uint32 thread_id
+uint32 obj_mask
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

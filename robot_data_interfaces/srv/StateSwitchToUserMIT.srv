@@ -1,0 +1,14 @@
+# Service for function: StateSwitchToUserMITMode
+# Request: function input parameters
+uint8 obj_type
+uint32 timeout
+float64[7] pos
+float64[7] vel
+float64[7] tor
+float64[7] k
+float64[7] d
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,335 @@
+ConfigClearEncError.srv : 
+request   - uint8 obj_type，uint32 axis_mask
+response  - int32 result
+
+ConfigDisableSoftLimit.srv : 
+request   - uint8 obj_type，uint8 axis_mask
+response  - int32 result
+
+ConfigGetPDCmdCycleTime.srv : 
+request   - 
+response  - int32 cycle_time，int32 result
+
+ConfigResetAxisSensorOffset.srv : 
+request   - uint8 obj_type，uint32 axis_id
+response  - int32 result
+
+ConfigResetEncOffset.srv : 
+request   - uint8 obj_type，uint8 axis_mask
+response  - int32 result
+
+ConfigResetSensorOffset.srv : 
+request   - uint8 obj_type
+response  - int32 result
+
+ConfigSetBrakeLock.srv : 
+request   - uint8 obj_type，uint8 axis_mask
+response  - int32 result
+
+ConfigSetBrakeUnlock.srv : 
+request   - uint8 obj_type，uint8 axis_mask
+response  - int32 result
+
+ConfigSetPDCmdCycleTime.srv : 
+request   - int32 cycle_time
+response  - int32 result
+
+ConfigSetTraj.srv : 
+request   - uint8 obj_type，uint32 point_num，float64[] point_data
+response  - int32 result
+
+FbkCheckUserDataSet.srv : 
+request   - int32 user_data_len
+response  - int32 result
+
+FbkGetCtrlObjDof.srv : 
+request   - uint8 obj_type
+response  - int32 dof，int32 result
+
+FbkGetCtrlObjPhysicalState.srv : 
+request   - uint8 obj_type
+response  - int32 physical_state，int32 result
+
+FbkGetCtrlObjSensorInfo.srv : 
+request   - uint8 obj_type
+response  - int32[7] version，int32[7] serial，int32 result
+
+FbkGetCtrlObjServoVersion.srv : 
+request   - uint8 obj_type
+response  - string[7] firmware_version，uint32[7] config_version，int32 result
+
+FbkGetSystemMsg.srv : 
+request   - 
+response  - string msg，int32 result
+
+FbkGetUserData.srv : 
+request   - uint8[] data_ptr
+response  - int32 result
+
+FbkRegisterUserDataSet.srv : 
+request   - string name，int32 data_type，int32 sub，int32 data_num
+response  - int32 result
+
+FbkResetSystemMsg.srv : 
+request   - 
+response  - int32 result
+
+FbkResetUserDataSet.srv : 
+request   - 
+response  - int32 result
+
+ParamGetFloat.srv : 
+request   - string name
+response  - float32 value，int32 result
+
+ParamGetInt32.srv : 
+request   - string name
+response  - int32 value，int32 result
+
+ParamGetString.srv : 
+request   - string name
+response  - string value，int32 result
+
+ParamSetFloat.srv : 
+request   - string name，float32 value
+response  - int32 result
+
+ParamSetInt32.srv : 
+request   - string name，int32 value
+response  - int32 result
+
+RuntimeEmergencyStop.srv : 
+request   - uint32 thread_id，uint32 obj_mask
+response  - uint32 stopped_mask
+
+RuntimeRunTraj.srv : 
+request   - uint32 thread_id，uint32 obj_mask
+response  - int32 result
+
+RuntimeSetAccRatio.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64 acc_ratio
+response  - int32 result
+
+RuntimeSetBodyPD.srv : 
+request   - uint32 thread_id，float64[6] p，float64[6] d
+response  - int32 result
+
+RuntimeSetBodyPDD.srv : 
+request   - uint32 thread_id，float64[6] d
+response  - int32 result
+
+RuntimeSetBodyPDP.srv : 
+request   - uint32 thread_id，float64[6] p
+response  - int32 result
+
+RuntimeSetCartK.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] k
+response  - int32 result
+
+RuntimeSetCartKD.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] k，float64[7] d
+response  - int32 result
+
+RuntimeSetForceCtrl.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[5] force_ctrl
+response  - int32 result
+
+RuntimeSetJointD.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] d
+response  - int32 result
+
+RuntimeSetJointK.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] k
+response  - int32 result
+
+RuntimeSetJointKD.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] k，float64[7] d
+response  - int32 result
+
+RuntimeSetJointMITCmd.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[7] pos_cmd，float64[7] vel_cmd，float64[7] tor_cmd，float64[7] k，float64[7] d
+response  - int32 result
+
+RuntimeSetRefOri.srv : 
+request   - uint32 thread_id，uint8 obj_type，uint8 ref_ori_type，float64[3] ref_ori
+response  - int32 result
+
+RuntimeSetSpeedRatio.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64 vel_ratio，float64 acc_ratio
+response  - int32 result
+
+RuntimeSetTag.srv : 
+request   - uint32 thread_id，uint8 obj_type，int32 tag
+response  - int32 result
+
+RuntimeSetToolD.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[10] d
+response  - int32 result
+
+RuntimeSetToolK.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[6] k
+response  - int32 result
+
+RuntimeSetToolKD.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[6] k，float64[10] d
+response  - int32 result
+
+RuntimeSetTorqueCtrl.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64[5] torque_ctrl
+response  - int32 result
+
+RuntimeSetVelRatio.srv : 
+request   - uint32 thread_id，uint8 obj_type，float64 vel_ratio
+response  - int32 result
+
+RuntimeStopTraj.srv : 
+request   - uint32 thread_id，uint32 obj_mask
+response  - int32 result
+
+StateGetServoErrorCode.srv : 
+request   - uint8 obj_type
+response  - uint32[7] error_codes，int32 result
+
+StateResetError.srv : 
+request   - uint8 obj_type，uint32 timeout
+response  - uint32 system_errorcode，int32 result
+
+StateSwitchToCollaborativeRelease.srv : 
+request   - uint8 obj_type，uint32 timeout
+response  - int32 result
+
+StateSwitchToDragCartR.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToDragCartX.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToDragCartY.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToDragCartZ.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToDragJoint.srv : 
+request   - uint8 obj_type，uint32 timeout，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToIdle.srv : 
+request   - uint8 obj_type，uint32 timeout
+response  - int32 result
+
+StateSwitchToImpCart.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64 vel_ratio，float64 acc_ratio，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToImpForce.srv : 
+request   - uint8 obj_type，uint32 timeout，uint8 ref_ori_type，float64[3] ref_ori，float64[5] force_ctrl，float64[5] torque_ctrl
+response  - int32 result
+
+StateSwitchToImpJoint.srv : 
+request   - uint8 obj_type，uint32 timeout，float64 vel_ratio，float64 acc_ratio，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToMIT.srv : 
+request   - uint8 obj_type，uint32 timeout，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToPD.srv : 
+request   - uint8 obj_type，uint32 timeout，float64 vel_ratio，float64 acc_ratio，float64[7] k，float64[7] d
+response  - int32 result
+
+StateSwitchToPosition.srv : 
+request   - uint8 obj_type，uint32 timeout，float64 vel_ratio，float64 acc_ratio
+response  - int32 result
+
+StateSwitchToUserMIT.srv : 
+request   - uint8 obj_type，uint32 timeout，float64[7] pos，float64[7] vel，float64[7] tor，float64[7] k，float64[7] d
+response  - int32 result
+
+SystemGetControllerVersion.srv : 
+request   - 
+response  - int32 controller_version，int32 result
+
+SystemGetIP.srv : 
+request   - 
+response  - string ip_str，int32 result
+
+SystemGetLinkState.srv : 
+request   - 
+response  - int32 link_state
+
+SystemGetLogLevel.srv : 
+request   - 
+response  - int32 result
+
+SystemGetRobotType.srv : 
+request   - 
+response  - int32 robot_type，int32 result
+
+SystemGetSDKVersion.srv : 
+request   - 
+response  - int32 sdk_version，int32 result
+
+SystemGetTime.srv : 
+request   - 
+response  - string time_str，int32 result
+
+SystemLink.srv : 
+request   - uint8 ip1，uint8 ip2，uint8 ip3，uint8 ip4，uint32 log_level
+response  - int32 latency，int32 result
+
+SystemReboot.srv : 
+request   - 
+response  - int32 result
+
+SystemRecvFile.srv : 
+request   - string local_file_path，string remote_file_path
+response  - int32 result
+
+SystemRestoreImage.srv : 
+request   - 
+response  - int32 result
+
+SystemSendFile.srv : 
+request   - string local_file_path，string remote_file_path
+response  - int32 result
+
+SystemSetIP.srv : 
+request   - int32[4] ip
+response  - int32 result
+
+SystemSetLogLevel.srv : 
+request   - uint32 log_level
+response  - int32 result
+
+SystemSetTime.srv : 
+request   - int32 year，int32 month，int32 day，int32 hour，int32 minute，int32 second
+response  - int32 result
+
+SystemSetUserFbkType.srv : 
+request   - uint32 chn_id，uint32 fbk_type
+response  - int32 result
+
+SystemUnlink.srv : 
+request   - 
+response  - int32 result
+
+SystemUpdate.srv : 
+request   - string update_file_path，string ini_file_path
+response  - int32 result
+
+TerminalCH485GetData.srv : 
+request   - uint8 terminal_type，uint32 timeout
+response  - uint8 chn_type，uint8[64] data，uint32 receiving_time，int32 result
+
+TerminalCH485SetData.srv : 
+request   - uint8 terminal_type，uint8 chn_type，uint32 timeout，uint8[64] data，uint32 data_len
+response  - uint32 sending_time，int32 result
+
+TerminalClearData.srv : 
+request   - uint8 terminal_type
+response  - int32 result

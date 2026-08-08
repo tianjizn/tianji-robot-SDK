@@ -1,0 +1,397 @@
+#include "basic_pd_user.h"
+
+BasicPDUser::BasicPDUser() : Node("basic_pd_user")
+{
+    client0_ = this->create_client<SystemLink>("system_link");
+    client1_ = this->create_client<SystemGetSDKVersion>("system_get_sdk_version");
+    client2_ = this->create_client<SystemGetControllerVersion>(
+        "system_get_controller_version");
+
+    client3_ = this->create_client<FbkGetCurrentState>("fbk_get_current_state");
+    client4_ = this->create_client<StateResetError>("state_reset_error");
+    client5_ = this->create_client<StateSwitchToIdle>("state_switch_to_idle");
+    client6_ = this->create_client<ConfigSetPDCmdCycleTime>(
+        "config_set_pd_cmd_cycle_time");
+    client7_ = this->create_client<StateSwitchToPD>("state_switch_to_pd");
+
+    subscription0_ = this->create_subscription<RobotRT>(
+        "/robot/rt_feedback", 500,
+        std::bind(&BasicPDUser::handle_RobotRT_callback, this,
+                  std::placeholders::_1));
+
+    subscription1_ = this->create_subscription<RobotSG>(
+        "/robot/sg_feedback", 250,
+        std::bind(&BasicPDUser::handle_RobotSG_callback, this,
+                  std::placeholders::_1));
+
+    publisher_ =
+        this->create_publisher<JointPosPDCmd>("/robot/joint_pos_pd_cmd", 100);
+
+    RCLCPP_INFO(this->get_logger(), "BasicPD User ready!");
+    // timer_ = this->create_wall_timer(
+    //     std::chrono::milliseconds(10),
+    //     std::bind(&BasicPDUser::timer_callback, this));
+}
+
+std::shared_ptr<SystemLink::Response>
+BasicPDUser::send_SystemLink_request(uint8_t ip1, uint8_t ip2, uint8_t ip3,
+                                     uint8_t ip4, uint32_t log_level)
+{
+    while (!client0_->wait_for_service(1s))
+    {
+        if (!rclcpp::ok())
+        {
+            RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for service");
+            return nullptr;
+        }
+        RCLCPP_INFO(this->get_logger(), "Waiting for service 'system_link'...");
+    }
+
+    auto request = std::make_shared<SystemLink::Request>();
+    request->ip1 = ip1;
+    request->ip2 = ip2;
+    request->ip3 = ip3;
+    request->ip4 = ip4;
+    request->log_level = log_level;
+
+    auto future = client0_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "Service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<SystemGetSDKVersion::Response>
+BasicPDUser::send_SystemGetSDKVersion_request()
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client1_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(this->get_logger(),
+                    "Waiting for service 'SystemGetSDKVersion'... (attempt %d/3)",
+                    i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Service 'SystemGetSDKVersion' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<SystemGetSDKVersion::Request>();
+    auto future = client1_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "SystemGetSDKVersion Service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<SystemGetControllerVersion::Response>
+BasicPDUser::send_SystemGetControllerVersion_request()
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client2_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(
+            this->get_logger(),
+            "Waiting for service 'SystemGetControllerVersion'... (attempt %d/3)",
+            i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Service 'SystemGetControllerVersion' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<SystemGetControllerVersion::Request>();
+    auto future = client2_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "SystemGetControllerVersion Service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<FbkGetCurrentState::Response>
+BasicPDUser::send_FbkGetCurrentState_request(uint8_t obj_type)
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client3_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(this->get_logger(),
+                    "Waiting for service 'FbkGetCurrentState'... (attempt %d/3)",
+                    i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Service 'FbkGetCurrentState' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<FbkGetCurrentState::Request>();
+    request->obj_type = obj_type;
+
+    auto future = client3_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "FbkGetCurrentState service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<StateResetError::Response>
+BasicPDUser::send_StateResetError_request(uint8_t obj_type, uint32_t timeout)
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client4_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(this->get_logger(),
+                    "Waiting for service 'StateResetError'... (attempt %d/3)",
+                    i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Service 'StateResetError' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<StateResetError::Request>();
+    request->obj_type = obj_type;
+    request->timeout = timeout;
+
+    auto future = client4_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(), future,
+            std::chrono::seconds(timeout / 1000)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "StateResetError service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<StateSwitchToIdle::Response>
+BasicPDUser::send_StateSwitchToIdle_request(uint8_t obj_type,
+                                            uint32_t timeout)
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client5_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(this->get_logger(),
+                    "Waiting for service 'StateSwitchToIdle'... (attempt %d/3)",
+                    i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Service 'StateSwitchToIdle' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<StateSwitchToIdle::Request>();
+    request->obj_type = obj_type;
+    request->timeout = timeout;
+
+    auto future = client5_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(), future,
+            std::chrono::seconds(timeout / 1000)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "StateSwitchToIdle service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<ConfigSetPDCmdCycleTime::Response>
+BasicPDUser::send_ConfigSetPDCmdCycleTime_request(int32_t cycle_time)
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client6_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(
+            this->get_logger(),
+            "Waiting for service 'ConfigSetPDCmdCycleTime'... (attempt %d/3)",
+            i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Service 'ConfigSetPDCmdCycleTime' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<ConfigSetPDCmdCycleTime::Request>();
+    request->cycle_time = cycle_time;
+
+    auto future = client6_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "ConfigSetPDCmdCycleTime service call failed");
+        return nullptr;
+    }
+}
+
+std::shared_ptr<StateSwitchToPD::Response>
+BasicPDUser::send_StateSwitchToPD_request(uint8_t obj_type, uint32_t timeout,
+                                          float vel_ratio, float acc_ratio,
+                                          const std::array<double, 7> &k,
+                                          const std::array<double, 7> &d)
+{
+    bool service_ready = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        if (client7_->wait_for_service(std::chrono::seconds(1)))
+        {
+            service_ready = true;
+            break;
+        }
+        RCLCPP_WARN(this->get_logger(),
+                    "Waiting for service 'StateSwitchToPD'... (attempt %d/3)",
+                    i + 1);
+    }
+
+    if (!service_ready)
+    {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Service 'StateSwitchToPD' not available after 3 attempts");
+        return nullptr;
+    }
+
+    auto request = std::make_shared<StateSwitchToPD::Request>();
+    request->obj_type = obj_type;
+    request->timeout = timeout;
+    request->vel_ratio = vel_ratio;
+    request->acc_ratio = acc_ratio;
+    request->k = k;
+    request->d = d;
+
+    auto future = client7_->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                           future, std::chrono::seconds(1)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        return future.get();
+    }
+    else
+    {
+        RCLCPP_ERROR(this->get_logger(), "StateSwitchToPD service call failed");
+        return nullptr;
+    }
+}
+
+void BasicPDUser::handle_RobotRT_callback(RobotRT::SharedPtr msg)
+{
+    static int i = 0;
+    // RCLCPP_INFO_STREAM(this->get_logger(), "\n" << robot_rt_to_string(*msg));
+    if (msg)
+    {
+        std::lock_guard<std::mutex> lock(mtxRT_);
+        rt_ptr_ = std::make_unique<RobotRT>(*msg);
+        RCLCPP_INFO(this->get_logger(), "Topic Get RobotRT %d!", i++);
+    }
+}
+
+void BasicPDUser::handle_RobotSG_callback(RobotSG::SharedPtr msg)
+{
+    static int j = 0;
+    // RCLCPP_INFO_STREAM(this->get_logger(), "\n" << robot_sg_to_string(*msg));
+    if (msg)
+    {
+        std::lock_guard<std::mutex> lock(mtxSG_);
+        sg_ptr_ = std::make_unique<RobotSG>(*msg);
+        RCLCPP_INFO(this->get_logger(), "Topic Get RobotSG %d!", j++);
+    }
+}

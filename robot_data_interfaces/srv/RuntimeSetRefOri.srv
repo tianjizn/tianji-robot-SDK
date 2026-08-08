@@ -1,0 +1,10 @@
+# Request
+uint32 		thread_id
+uint8 		obj_type
+uint8 		ref_ori_type
+float64[3] 	ref_ori
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,9 @@
+# Request: function input parameters
+uint8 obj_type
+
+---
+
+# Response: execution result
+string[7] firmware_version
+uint32[7] config_version
+int32 result

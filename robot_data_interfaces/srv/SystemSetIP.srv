@@ -1,0 +1,7 @@
+# Request: function input parameters
+int32[4] ip
+
+---
+
+# Response: execution result
+int32 result

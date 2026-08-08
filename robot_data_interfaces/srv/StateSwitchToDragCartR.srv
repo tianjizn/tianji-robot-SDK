@@ -1,0 +1,13 @@
+# Service for function: StateSwitchToDragCartR
+# Request: function input parameters
+uint8 obj_type
+uint32 timeout
+uint8 ref_ori_type
+float64[3] ref_ori
+float64[7] k
+float64[7] d
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

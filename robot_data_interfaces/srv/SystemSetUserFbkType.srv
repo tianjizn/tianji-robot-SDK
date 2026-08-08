@@ -1,0 +1,8 @@
+# Request (empty)
+uint32 chn_id
+uint32 fbk_type
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

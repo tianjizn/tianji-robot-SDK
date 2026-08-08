@@ -1,0 +1,9 @@
+# Request: function input parameters
+uint32 thread_id
+float64[6] p
+float64[6] d
+
+---
+
+# Response: execution result
+int32 result

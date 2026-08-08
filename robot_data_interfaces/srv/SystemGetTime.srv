@@ -1,0 +1,9 @@
+# SystemGetTime.srv - Get system time from controller
+# Corresponds to FX_L1_System_GetSystemTime
+
+# Request (empty)
+---
+
+# Response
+string time_str              # Format: "YYYY-MM-DD HH:MM:SS"
+int32 result                 # Defined in FXFuncReturn

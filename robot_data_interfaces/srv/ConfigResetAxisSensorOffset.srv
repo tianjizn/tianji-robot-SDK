@@ -1,0 +1,9 @@
+# Service for function: ConfigResetAxisSensorOffset
+# Request: function input parameters
+uint8  obj_type
+uint32 axis_id
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

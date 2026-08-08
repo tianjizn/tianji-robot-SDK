@@ -1,0 +1,8 @@
+# Response: execution result
+uint8 obj_type
+
+---
+
+# Response: execution result
+uint32[7] error_codes
+int32 result

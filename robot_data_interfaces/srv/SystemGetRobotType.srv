@@ -1,0 +1,7 @@
+# Request (empty)
+
+---
+
+# Response: execution result
+int32 robot_type
+int32 result

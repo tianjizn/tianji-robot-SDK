@@ -1,0 +1,11 @@
+# ParamGetInt32.srv - Get integer parameter by name
+# Corresponds to FX_L1_Param_GetInt32
+
+# Request
+string name                  # Parameter name
+
+---
+
+# Response
+int32 value                  # Retrieved value
+int32 result                 # Defined in FXFuncReturn

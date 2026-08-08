@@ -1,0 +1,11 @@
+# ParamSetInt32.srv - Set integer parameter by name
+# Corresponds to FX_L1_Param_SetInt32
+
+# Request
+string name                  # Parameter name
+int32 value                  # Integer value to assign
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn

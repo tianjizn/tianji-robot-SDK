@@ -1,0 +1,8 @@
+# Service for function: ConfigResetSensorOffset
+# Request: function input parameters
+uint8 obj_type
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

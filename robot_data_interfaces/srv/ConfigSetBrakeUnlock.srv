@@ -1,0 +1,8 @@
+# Request: function input parameters
+uint8 obj_type
+uint8 axis_mask
+
+---
+
+# Response: execution result
+int32 result

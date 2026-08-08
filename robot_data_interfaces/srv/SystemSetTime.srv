@@ -1,0 +1,15 @@
+# SystemSetTime.srv - Set system time on controller
+# Corresponds to FX_L1_System_SetSystemTime
+
+# Request
+int32 year                   # Year value (e.g., 2024)
+int32 month                  # Month value (1-12)
+int32 day                    # Day value (1-31)
+int32 hour                   # Hour value (0-23)
+int32 minute                 # Minute value (0-59)
+int32 second                 # Second value (0-59)
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn

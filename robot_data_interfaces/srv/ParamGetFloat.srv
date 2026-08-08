@@ -1,0 +1,8 @@
+# Request: function input parameters
+string name
+
+---
+
+# Response: execution result
+float32 value
+int32 result

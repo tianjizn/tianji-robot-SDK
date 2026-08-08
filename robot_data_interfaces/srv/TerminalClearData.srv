@@ -1,0 +1,7 @@
+# Request: function input parameters
+uint8 terminal_type
+
+---
+
+# Response: execution result
+int32 result

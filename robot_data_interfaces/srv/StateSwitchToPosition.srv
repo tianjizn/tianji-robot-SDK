@@ -1,0 +1,13 @@
+# StateSwitchToPosition.srv - Switch to position control mode
+# Corresponds to FX_L1_State_SwitchToPositionMode
+
+# Request
+uint8 obj_type               # Object type (FXObjType)
+uint32 timeout               # Timeout in milliseconds
+float64 vel_ratio            # Velocity scaling ratio
+float64 acc_ratio            # Acceleration scaling ratio
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn

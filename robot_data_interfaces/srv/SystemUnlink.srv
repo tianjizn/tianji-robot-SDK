@@ -1,0 +1,8 @@
+# SystemUnlink.srv - Unlink the UDP link
+# Corresponds to FX_L1_System_Unlink
+
+# Request (empty)
+---
+
+# Response
+int32 result                 # 0 on success

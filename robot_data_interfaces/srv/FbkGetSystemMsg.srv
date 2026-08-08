@@ -1,0 +1,7 @@
+# Request (empty)
+
+---
+
+# Response: execution result
+string msg
+int32 result

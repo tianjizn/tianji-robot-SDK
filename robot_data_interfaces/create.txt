@@ -1,0 +1,216 @@
+  serviceClearEncError_ = this->create_service<ConfigClearEncError>(
+      "ConfigClearEncError", std::bind(&BasicOrin::handle_ConfigClearEncError_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceDisableSoftLimit_ = this->create_service<ConfigDisableSoftLimit>(
+      "ConfigDisableSoftLimit", std::bind(&BasicOrin::handle_ConfigDisableSoftLimit_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetPDCmdCycleTime_ = this->create_service<ConfigGetPDCmdCycleTime>(
+      "ConfigGetPDCmdCycleTime", std::bind(&BasicOrin::handle_ConfigGetPDCmdCycleTime_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetAxisSensorOffset_ = this->create_service<ConfigResetAxisSensorOffset>(
+      "ConfigResetAxisSensorOffset", std::bind(&BasicOrin::handle_ConfigResetAxisSensorOffset_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetEncOffset_ = this->create_service<ConfigResetEncOffset>(
+      "ConfigResetEncOffset", std::bind(&BasicOrin::handle_ConfigResetEncOffset_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetSensorOffset_ = this->create_service<ConfigResetSensorOffset>(
+      "ConfigResetSensorOffset", std::bind(&BasicOrin::handle_ConfigResetSensorOffset_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetBrakeLock_ = this->create_service<ConfigSetBrakeLock>(
+      "ConfigSetBrakeLock", std::bind(&BasicOrin::handle_ConfigSetBrakeLock_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetBrakeUnlock_ = this->create_service<ConfigSetBrakeUnlock>(
+      "ConfigSetBrakeUnlock", std::bind(&BasicOrin::handle_ConfigSetBrakeUnlock_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetPDCmdCycleTime_ = this->create_service<ConfigSetPDCmdCycleTime>(
+      "ConfigSetPDCmdCycleTime", std::bind(&BasicOrin::handle_ConfigSetPDCmdCycleTime_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetTraj_ = this->create_service<ConfigSetTraj>(
+      "ConfigSetTraj", std::bind(&BasicOrin::handle_ConfigSetTraj_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceCheckUserDataSet_ = this->create_service<FbkCheckUserDataSet>(
+      "FbkCheckUserDataSet", std::bind(&BasicOrin::handle_FbkCheckUserDataSet_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetCtrlObjDof_ = this->create_service<FbkGetCtrlObjDof>(
+      "FbkGetCtrlObjDof", std::bind(&BasicOrin::handle_FbkGetCtrlObjDof_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetCtrlObjPhysicalState_ = this->create_service<FbkGetCtrlObjPhysicalState>(
+      "FbkGetCtrlObjPhysicalState", std::bind(&BasicOrin::handle_FbkGetCtrlObjPhysicalState_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetCtrlObjSensorInfo_ = this->create_service<FbkGetCtrlObjSensorInfo>(
+      "FbkGetCtrlObjSensorInfo", std::bind(&BasicOrin::handle_FbkGetCtrlObjSensorInfo_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetCtrlObjServoVersion_ = this->create_service<FbkGetCtrlObjServoVersion>(
+      "FbkGetCtrlObjServoVersion", std::bind(&BasicOrin::handle_FbkGetCtrlObjServoVersion_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetSystemMsg_ = this->create_service<FbkGetSystemMsg>(
+      "FbkGetSystemMsg", std::bind(&BasicOrin::handle_FbkGetSystemMsg_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetUserData_ = this->create_service<FbkGetUserData>(
+      "FbkGetUserData", std::bind(&BasicOrin::handle_FbkGetUserData_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceRegisterUserDataSet_ = this->create_service<FbkRegisterUserDataSet>(
+      "FbkRegisterUserDataSet", std::bind(&BasicOrin::handle_FbkRegisterUserDataSet_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetSystemMsg_ = this->create_service<FbkResetSystemMsg>(
+      "FbkResetSystemMsg", std::bind(&BasicOrin::handle_FbkResetSystemMsg_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetUserDataSet_ = this->create_service<FbkResetUserDataSet>(
+      "FbkResetUserDataSet", std::bind(&BasicOrin::handle_FbkResetUserDataSet_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetFloat_ = this->create_service<ParamGetFloat>(
+      "ParamGetFloat", std::bind(&BasicOrin::handle_ParamGetFloat_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetInt32_ = this->create_service<ParamGetInt32>(
+      "ParamGetInt32", std::bind(&BasicOrin::handle_ParamGetInt32_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetString_ = this->create_service<ParamGetString>(
+      "ParamGetString", std::bind(&BasicOrin::handle_ParamGetString_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetFloat_ = this->create_service<ParamSetFloat>(
+      "ParamSetFloat", std::bind(&BasicOrin::handle_ParamSetFloat_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetInt32_ = this->create_service<ParamSetInt32>(
+      "ParamSetInt32", std::bind(&BasicOrin::handle_ParamSetInt32_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceEmergencyStop_ = this->create_service<RuntimeEmergencyStop>(
+      "RuntimeEmergencyStop", std::bind(&BasicOrin::handle_RuntimeEmergencyStop_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceRunTraj_ = this->create_service<RuntimeRunTraj>(
+      "RuntimeRunTraj", std::bind(&BasicOrin::handle_RuntimeRunTraj_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetAccRatio_ = this->create_service<RuntimeSetAccRatio>(
+      "RuntimeSetAccRatio", std::bind(&BasicOrin::handle_RuntimeSetAccRatio_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetBodyPDD_ = this->create_service<RuntimeSetBodyPDD>(
+      "RuntimeSetBodyPDD", std::bind(&BasicOrin::handle_RuntimeSetBodyPDD_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetBodyPDP_ = this->create_service<RuntimeSetBodyPDP>(
+      "RuntimeSetBodyPDP", std::bind(&BasicOrin::handle_RuntimeSetBodyPDP_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetBodyPD_ = this->create_service<RuntimeSetBodyPD>(
+      "RuntimeSetBodyPD", std::bind(&BasicOrin::handle_RuntimeSetBodyPD_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetCartKD_ = this->create_service<RuntimeSetCartKD>(
+      "RuntimeSetCartKD", std::bind(&BasicOrin::handle_RuntimeSetCartKD_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetCartK_ = this->create_service<RuntimeSetCartK>(
+      "RuntimeSetCartK", std::bind(&BasicOrin::handle_RuntimeSetCartK_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetForceCtrl_ = this->create_service<RuntimeSetForceCtrl>(
+      "RuntimeSetForceCtrl", std::bind(&BasicOrin::handle_RuntimeSetForceCtrl_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetRefOri_ = this->create_service<RuntimeSetRefOri>(
+      "RuntimeSetRefOri", std::bind(&BasicOrin::handle_RuntimeSetRefOri_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetServoErrorCode_ = this->create_service<StateGetServoErrorCode>(
+      "StateGetServoErrorCode", std::bind(&BasicOrin::handle_StateGetServoErrorCode_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceResetError_ = this->create_service<StateResetError>(
+      "StateResetError", std::bind(&BasicOrin::handle_StateResetError_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToCollaborativeRelease_ = this->create_service<StateSwitchToCollaborativeRelease>(
+      "StateSwitchToCollaborativeRelease", std::bind(&BasicOrin::handle_StateSwitchToCollaborativeRelease_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToDragCartR_ = this->create_service<StateSwitchToDragCartR>(
+      "StateSwitchToDragCartR", std::bind(&BasicOrin::handle_StateSwitchToDragCartR_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToDragCartX_ = this->create_service<StateSwitchToDragCartX>(
+      "StateSwitchToDragCartX", std::bind(&BasicOrin::handle_StateSwitchToDragCartX_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToDragCartY_ = this->create_service<StateSwitchToDragCartY>(
+      "StateSwitchToDragCartY", std::bind(&BasicOrin::handle_StateSwitchToDragCartY_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToDragCartZ_ = this->create_service<StateSwitchToDragCartZ>(
+      "StateSwitchToDragCartZ", std::bind(&BasicOrin::handle_StateSwitchToDragCartZ_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToDragJoint_ = this->create_service<StateSwitchToDragJoint>(
+      "StateSwitchToDragJoint", std::bind(&BasicOrin::handle_StateSwitchToDragJoint_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToIdle_ = this->create_service<StateSwitchToIdle>(
+      "StateSwitchToIdle", std::bind(&BasicOrin::handle_StateSwitchToIdle_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToImpCart_ = this->create_service<StateSwitchToImpCart>(
+      "StateSwitchToImpCart", std::bind(&BasicOrin::handle_StateSwitchToImpCart_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToImpForce_ = this->create_service<StateSwitchToImpForce>(
+      "StateSwitchToImpForce", std::bind(&BasicOrin::handle_StateSwitchToImpForce_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToImpJoint_ = this->create_service<StateSwitchToImpJoint>(
+      "StateSwitchToImpJoint", std::bind(&BasicOrin::handle_StateSwitchToImpJoint_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToMIT_ = this->create_service<StateSwitchToMIT>(
+      "StateSwitchToMIT", std::bind(&BasicOrin::handle_StateSwitchToMIT_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToPD_ = this->create_service<StateSwitchToPD>(
+      "StateSwitchToPD", std::bind(&BasicOrin::handle_StateSwitchToPD_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToPosition_ = this->create_service<StateSwitchToPosition>(
+      "StateSwitchToPosition", std::bind(&BasicOrin::handle_StateSwitchToPosition_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSwitchToUserMIT_ = this->create_service<StateSwitchToUserMIT>(
+      "StateSwitchToUserMIT", std::bind(&BasicOrin::handle_StateSwitchToUserMIT_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetControllerVersion_ = this->create_service<SystemGetControllerVersion>(
+      "SystemGetControllerVersion", std::bind(&BasicOrin::handle_SystemGetControllerVersion_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetIP_ = this->create_service<SystemGetIP>(
+      "SystemGetIP", std::bind(&BasicOrin::handle_SystemGetIP_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetLinkState_ = this->create_service<SystemGetLinkState>(
+      "SystemGetLinkState", std::bind(&BasicOrin::handle_SystemGetLinkState_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetLogLevel_ = this->create_service<SystemGetLogLevel>(
+      "SystemGetLogLevel", std::bind(&BasicOrin::handle_SystemGetLogLevel_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetRobotType_ = this->create_service<SystemGetRobotType>(
+      "SystemGetRobotType", std::bind(&BasicOrin::handle_SystemGetRobotType_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetSDKVersion_ = this->create_service<SystemGetSDKVersion>(
+      "SystemGetSDKVersion", std::bind(&BasicOrin::handle_SystemGetSDKVersion_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceGetTime_ = this->create_service<SystemGetTime>(
+      "SystemGetTime", std::bind(&BasicOrin::handle_SystemGetTime_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceLink_ = this->create_service<SystemLink>(
+      "SystemLink", std::bind(&BasicOrin::handle_SystemLink_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceReboot_ = this->create_service<SystemReboot>(
+      "SystemReboot", std::bind(&BasicOrin::handle_SystemReboot_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceRecvFile_ = this->create_service<SystemRecvFile>(
+      "SystemRecvFile", std::bind(&BasicOrin::handle_SystemRecvFile_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceRestoreImage_ = this->create_service<SystemRestoreImage>(
+      "SystemRestoreImage", std::bind(&BasicOrin::handle_SystemRestoreImage_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSendFile_ = this->create_service<SystemSendFile>(
+      "SystemSendFile", std::bind(&BasicOrin::handle_SystemSendFile_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetIP_ = this->create_service<SystemSetIP>(
+      "SystemSetIP", std::bind(&BasicOrin::handle_SystemSetIP_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetLogLevel_ = this->create_service<SystemSetLogLevel>(
+      "SystemSetLogLevel", std::bind(&BasicOrin::handle_SystemSetLogLevel_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetTime_ = this->create_service<SystemSetTime>(
+      "SystemSetTime", std::bind(&BasicOrin::handle_SystemSetTime_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceSetUserFbkType_ = this->create_service<SystemSetUserFbkType>(
+      "SystemSetUserFbkType", std::bind(&BasicOrin::handle_SystemSetUserFbkType_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceUnlink_ = this->create_service<SystemUnlink>(
+      "SystemUnlink", std::bind(&BasicOrin::handle_SystemUnlink_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceUpdate_ = this->create_service<SystemUpdate>(
+      "SystemUpdate", std::bind(&BasicOrin::handle_SystemUpdate_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceCH485GetData_ = this->create_service<TerminalCH485GetData>(
+      "TerminalCH485GetData", std::bind(&BasicOrin::handle_TerminalCH485GetData_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceCH485SetData_ = this->create_service<TerminalCH485SetData>(
+      "TerminalCH485SetData", std::bind(&BasicOrin::handle_TerminalCH485SetData_request, this,
+                           std::placeholders::_1, std::placeholders::_2));
+  serviceClearData_ = this->create_service<TerminalClearData>(
+      "TerminalClearData", std::bind(&BasicOrin::handle_TerminalClearData_request, this,
+                           std::placeholders::_1, std::placeholders::_2));

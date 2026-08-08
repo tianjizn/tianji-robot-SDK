@@ -1,0 +1,8 @@
+# Request: function input parameters
+uint8 obj_type
+
+---
+
+# Response: execution result
+int32 physical_state
+int32 result

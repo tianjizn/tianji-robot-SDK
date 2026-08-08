@@ -1,0 +1,8 @@
+# Service for function: ConfigGetPDCmdCycleTime
+# Request (empty)
+
+---
+
+# Response: execution result
+int32 cycle_time
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,15 @@
+# StateSwitchToImpJoint.srv - Switch to joint-space impedance control mode
+# Corresponds to FX_L1_State_SwitchToImpJointMode
+
+# Request
+uint8 obj_type               # Object type (FXObjType)
+uint32 timeout               # Timeout in milliseconds
+float64 vel_ratio            # Velocity scaling ratio
+float64 acc_ratio            # Acceleration scaling ratio
+float64[7] k                 # Stiffness coefficients
+float64[7] d                 # Damping coefficients
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn

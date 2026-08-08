@@ -1,0 +1,7 @@
+# Request (empty)
+
+---
+
+# Response: execution result
+int32 controller_version
+int32 result

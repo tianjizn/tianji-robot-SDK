@@ -1,0 +1,7 @@
+# Service for function: SystemReboot
+# Request (empty)
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

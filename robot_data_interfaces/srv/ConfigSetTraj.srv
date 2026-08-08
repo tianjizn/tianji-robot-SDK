@@ -1,0 +1,9 @@
+# Request: function input parameters
+uint8 obj_type
+uint32 point_num
+float64[] point_data
+
+---
+
+# Response: execution result
+int32 result

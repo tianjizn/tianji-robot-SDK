@@ -1,0 +1,10 @@
+# ConfigSetPDCmdCycleTime.srv - Set PD command cycle time
+# Corresponds to FX_L1_Config_SetPDCmdCycleTime
+
+# Request
+int32 cycle_time             # PD command cycle time in milliseconds
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn

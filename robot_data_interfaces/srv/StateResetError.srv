@@ -1,0 +1,12 @@
+# StateResetError.srv - Reset error state for control object
+# Corresponds to FX_L1_State_ResetError
+
+# Request
+uint8 obj_type               # Object type (FXObjType)
+uint32 timeout               # Timeout in milliseconds
+
+---
+
+# Response
+uint32 system_errorcode      # System error code output
+int32 result                 # Defined in FXFuncReturn

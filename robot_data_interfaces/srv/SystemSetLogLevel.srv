@@ -1,0 +1,8 @@
+# Service for function: SystemSetLogLevel
+# Request: function input parameters
+uint32 log_level
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,1 @@
+uint8 state_type                # State type

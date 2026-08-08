@@ -1,0 +1,2 @@
+uint32 thread_id
+uint32 obj_mask

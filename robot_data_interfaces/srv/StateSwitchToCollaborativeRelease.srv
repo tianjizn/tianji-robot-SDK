@@ -1,0 +1,9 @@
+# Service for function: StateSwitchToCollaborativeRelease
+# Request: function input parameters
+uint8 obj_type
+uint32 timeout
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

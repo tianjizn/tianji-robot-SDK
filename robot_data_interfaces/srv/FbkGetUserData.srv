@@ -1,0 +1,9 @@
+# Service for function: FbkGetUserData
+# Request: function input parameters
+
+
+---
+
+# Response: execution result
+uint8[] data_ptr
+int32 result  # 0 for success, others for error code

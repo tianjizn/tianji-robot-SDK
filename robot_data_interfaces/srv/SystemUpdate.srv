@@ -1,0 +1,9 @@
+# Service for function: SystemUpdate
+# Request: function input parameters
+string update_file_path
+string ini_file_path
+
+---
+
+# Response: execution result
+int32 result  # 0 for success, others for error code

@@ -1,0 +1,65 @@
+Arm0HandGetData.msg : uint32 serial，uint8[512] data
+Arm0HandSetData.msg : uint8[512] data
+Arm1HandGetData.msg : uint32 serial，uint8[512] data
+Arm1HandSetData.msg : uint8[512] data
+ArmGet.msg : float32[7] fbk_joint_tor，float32[7] fbk_joint_ext_pos，int8[7] fbk_joint_temp，int8 fbk_flange_di，int8 fbk_low_spd_flag，int8 fbk_traj_state，int8 fbk_pd_cmd_quality
+ArmIn.msg : float32[7] cmd_joint_tor，float32[7] cmd_joint_pos，int16 cmd_ctrl_drag_type，int16 cmd_ctrl_force_type，float32[5] cmd_ctrl_force_dir，float32[5] cmd_ctrl_torque_dir，int32 cmd_tag，int16 cmd_pd_serial，int16 cmd_ctrl_ref_ori_type，float32[3] cmd_ctrl_ref_ori
+ArmOut.msg : float32[7] fbk_joint_pos，float32[7] fbk_joint_vel，float32[7] fbk_joint_cmd，float32[7] fbk_joint_sensor_tor，float32[7] fbk_joint_external_tor_est，float32[6] fbk_base_fn_est，float32[6] fbk_flange_ft_sensor，float32[7] fbk_joint_gravity_tor
+ArmRT.msg : StateCtr state，ArmIn arm_in，ArmOut arm_out
+ArmSG.msg : ArmSet arm_set，ArmGet arm_get
+ArmSet.msg : int32 ctrl_imp_type，float32 ctrl_vel_ratio，float32 ctrl_acc_ratio，float32[7] ctrl_joint_k，float32[7] ctrl_joint_d，float32[7] ctrl_cart_k，float32[7] ctrl_cart_d，float32[6] ctrl_tool_kine，float32[10] ctrl_tool_dyna
+BodyGet.msg : float32[6] fbk_joint_tor，float32[6] fbk_joint_ext_pos，int8[6] fbk_joint_temp，int8 fbk_traj_state，int8 fbk_pd_cmd_quality
+BodyIn.msg : int32 cmd_ctrl_type，float32[6] cmd_joint_pos，int32 cmd_tag，int16 cmd_pd_serial，int8[2] pad
+BodyOut.msg : float32[6] fbk_joint_pos，float32[6] fbk_joint_vel，float32[6] fbk_joint_sensor_tor，float32[6] fbk_joint_gravity_tor
+BodyRT.msg : StateCtr body_state，BodyIn body_in，BodyOut body_out
+BodySG.msg : BodySet body_set，BodyGet body_get
+BodySet.msg : float32 ctrl_vel_ratio，float32 ctrl_acc_ratio，float32[6] ctrl_pd_k，float32[6] ctrl_pd_d
+CartKD.msg : uint32 thread_id，uint8 obj_type，float32[7] k，float32[7] d
+DeviceRT.msg : float32[6] base_gyro，int8[3] pdo_state
+FXStateTypeArm0.msg : uint8 state_type
+FXStateTypeArm1.msg : uint8 state_type
+FXStateTypeBody.msg : uint8 state_type
+FXStateTypeHead.msg : uint8 state_type
+FXStateTypeLift.msg : uint8 state_type
+HandGet.msg : int8[24] fbk_joint_tor，int8[24] fbk_joint_temp
+HandIn.msg : int8 cmd_action，int8[3] pad，int8[24] cmd_joint_pos
+HandOut.msg : int8 fbk_state，int8[3] pad，int16[24] fbk_joint_error_code，int8[24] fbk_joint_pos，int8[24] fbk_joint_vel
+HandRT.msg : HandIn hand_in
+HandSG.msg : HandSet hand_set
+HandSet.msg : int8[24] ctrl_kp，int8[24] ctrl_kd，int8[24] ctrl_max_tor，bool[8] set_tag
+HeadGet.msg : float32[3] fbk_joint_tor，float32[3] fbk_joint_ext_pos，int8[3] fbk_joint_temp
+HeadIn.msg : float32[3] cmd_joint_pos
+HeadOut.msg : float32[3] fbk_joint_pos
+HeadRT.msg : StateCtr head_state，HeadIn head_in，HeadOut head_out
+HeadSG.msg : HeadSet head_set，HeadGet head_get
+HeadSet.msg : float32 vel_ratio，float32 acc_ratio
+JointKD.msg : uint32 thread_id，uint8 obj_type，float32[7] k，float32[7] d
+JointPosCmd.msg : uint32 thread_id，uint8 obj_type，float64[7] pos_cmd
+JointPosPDCmd.msg : std_msgs/Header header，uint32 thread_id，uint8 obj_type，float64[7] pos_cmd
+LiftGet.msg : float32[2] fbk_joint_tor，int8 fbk_traj_state
+LiftIn.msg : float32[2] cmd_joint_pos
+LiftOut.msg : float32[2] fbk_joint_pos
+LiftRT.msg : StateCtr lift_state，LiftIn lift_in，LiftOut lift_out
+LiftSG.msg : LiftSet lift_set，LiftGet lift_get
+LiftSet.msg : float32 ctrl_vel_ratio，float32 ctrl_acc_ratio
+RobotRT.msg : int32 rt_frame_serial，DeviceRT device，HeadRT head，ArmRT[2] arms，BodyRT body，LiftRT lift，SystemRT system
+RobotSG.msg : int32 sg_frame_serial，HeadSG head，ArmSG[2] arms，BodySG body，LiftSG lift
+RuntimeSetJointD.msg : uint32 thread_id，uint8 obj_type，float64[7] d
+RuntimeSetJointK.msg : uint32 thread_id，uint8 obj_type，float64[7] k
+RuntimeSetJointKD.msg : uint32 thread_id，uint8 obj_type，float64[7] k，float64[7] d
+RuntimeSetJointMITCmd.msg : uint32 thread_id，uint8 obj_type，float64[7] pos_cmd，float64[7] vel_cmd，float64[7] tor_cmd，float64[7] k，float64[7] d
+RuntimeSetJointPosCmd.msg : uint32 thread_id，uint8 obj_type，float64[7] pos_cmd
+RuntimeSetSpeedRatio.msg : uint32 thread_id，uint8 obj_type，float64 vel_ratio，float64 acc_ratio
+RuntimeSetTag.msg : uint32 thread_id，uint8 obj_type，int32 tag
+RuntimeSetToolD.msg : uint32 thread_id，uint8 obj_type，float64[10] d
+RuntimeSetToolK.msg : uint32 thread_id，uint8 obj_type，float64[6] k
+RuntimeSetToolKD.msg : uint32 thread_id，uint8 obj_type，float64[6] k，float64[10] d
+RuntimeSetTorqueCtrl.msg : uint32 thread_id，uint8 obj_type，float64[5] torque_ctrl
+RuntimeSetVelRatio.msg : uint32 thread_id，uint8 obj_type，float64 vel_ratio
+RuntimeStopTraj.msg : uint32 thread_id，uint32 obj_mask
+StateCtr.msg : uint16 cur_state，uint16 cmd_state，uint32 err_code
+SystemRT.msg : int16[4] system_user_fbk_type，float32[8] system_user_fbk0，float32[8] system_user_fbk1，float32[8] system_user_fbk2，float32[8] system_user_fbk3
+TerminalArm0CHNCanFDGetData.msg : uint8[64] data，uint32 receiving_time
+TerminalArm0CanFDSetData.msg : uint32 timeout，uint8[64] data，uint32 data_len
+TerminalArm1CHNCanFDGetData.msg : uint8[64] data，uint32 receiving_time
+TerminalArm1CanFDSetData.msg : uint32 timeout，uint8[64] data，uint32 data_len

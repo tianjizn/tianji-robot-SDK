@@ -1,0 +1,11 @@
+#request
+uint8       terminal_type
+uint32      timeout
+
+---
+
+#response
+uint8       chn_type
+uint8[64]   data
+uint32      receiving_time
+int32       result

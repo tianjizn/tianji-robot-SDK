@@ -1,0 +1,15 @@
+# SystemLink.srv - Establish UDP link to robot controller
+# Corresponds to FX_L1_System_Link
+
+# Request
+uint8 ip1                    # First octet of IPv4 address
+uint8 ip2                    # Second octet
+uint8 ip3                    # Third octet
+uint8 ip4                    # Fourth octet
+uint32 log_level             # Logging verbosity level
+
+---
+
+# Response
+int32 latency                # Network latency on success, or negative error code
+int32 result                 # Additional result code

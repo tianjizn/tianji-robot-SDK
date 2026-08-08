@@ -1,0 +1,12 @@
+# Request: function input parameters
+uint8 obj_type
+uint32 timeout
+uint8 ref_ori_type
+float64[3] ref_ori
+float64[5] force_ctrl
+float64[5] torque_ctrl
+
+---
+
+# Response: execution result
+int32 result

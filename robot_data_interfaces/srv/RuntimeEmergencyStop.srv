@@ -1,0 +1,11 @@
+# RuntimeEmergencyStop.srv - Trigger emergency stop
+# Corresponds to FX_L1_Runtime_EmergencyStop
+
+# Request
+uint32 thread_id             # Thread ID (range 1~7)
+uint32 obj_mask              # Bitmask of affected objects
+
+---
+
+# Response
+uint32 stopped_mask          # Bitmask of objects successfully stopped

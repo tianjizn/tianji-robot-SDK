@@ -1,0 +1,11 @@
+# StateSwitchToIdle.srv - Switch control object to idle state
+# Corresponds to FX_L1_State_SwitchToIdle
+
+# Request
+uint8 obj_type               # Object type (FXObjType)
+uint32 timeout               # Timeout in milliseconds
+
+---
+
+# Response
+int32 result                 # Defined in FXFuncReturn
