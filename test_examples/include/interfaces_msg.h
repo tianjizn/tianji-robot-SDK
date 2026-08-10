@@ -14,7 +14,6 @@
 #include <robot_data_interfaces/msg/body_rt.hpp>
 #include <robot_data_interfaces/msg/body_set.hpp>
 #include <robot_data_interfaces/msg/body_sg.hpp>
-#include <robot_data_interfaces/msg/cart_kd.hpp>
 #include <robot_data_interfaces/msg/device_rt.hpp>
 #include <robot_data_interfaces/msg/fbk_get_system_msg.hpp>
 #include <robot_data_interfaces/msg/fx_state_type_arm0.hpp>
@@ -61,10 +60,10 @@
 #include <robot_data_interfaces/msg/runtime_stop_traj.hpp>
 #include <robot_data_interfaces/msg/state_ctr.hpp>
 #include <robot_data_interfaces/msg/system_rt.hpp>
+#include <robot_data_interfaces/msg/terminal_arm0_can_fd_get_data.hpp>
 #include <robot_data_interfaces/msg/terminal_arm0_can_fd_set_data.hpp>
-#include <robot_data_interfaces/msg/terminal_arm0_chn_can_fd_get_data.hpp>
+#include <robot_data_interfaces/msg/terminal_arm1_can_fd_get_data.hpp>
 #include <robot_data_interfaces/msg/terminal_arm1_can_fd_set_data.hpp>
-#include <robot_data_interfaces/msg/terminal_arm1_chn_can_fd_get_data.hpp>
 
 using Arm0HandGetData = robot_data_interfaces::msg::Arm0HandGetData;
 using Arm0HandSetData = robot_data_interfaces::msg::Arm0HandSetData;
@@ -82,7 +81,6 @@ using BodyOut = robot_data_interfaces::msg::BodyOut;
 using BodyRT = robot_data_interfaces::msg::BodyRT;
 using BodySet = robot_data_interfaces::msg::BodySet;
 using BodySG = robot_data_interfaces::msg::BodySG;
-using CartKD = robot_data_interfaces::msg::CartKD;
 using DeviceRT = robot_data_interfaces::msg::DeviceRT;
 using FbkGetSystemMsg = robot_data_interfaces::msg::FbkGetSystemMsg;
 using FXStateTypeArm0 = robot_data_interfaces::msg::FXStateTypeArm0;
@@ -130,9 +128,9 @@ using RuntimeStopTraj = robot_data_interfaces::msg::RuntimeStopTraj;
 using SystemRT = robot_data_interfaces::msg::SystemRT;
 using TerminalArm0CanFDSetData =
     robot_data_interfaces::msg::TerminalArm0CanFDSetData;
-using TerminalArm0CHNCanFDGetData =
-    robot_data_interfaces::msg::TerminalArm0CHNCanFDGetData;
+using TerminalArm0CanFDGetData =
+    robot_data_interfaces::msg::TerminalArm0CanFDGetData;
 using TerminalArm1CanFDSetData =
     robot_data_interfaces::msg::TerminalArm1CanFDSetData;
-using TerminalArm1CHNCanFDGetData =
-    robot_data_interfaces::msg::TerminalArm1CHNCanFDGetData;
+using TerminalArm1CanFDGetData =
+    robot_data_interfaces::msg::TerminalArm1CanFDGetData;

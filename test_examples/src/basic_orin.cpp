@@ -72,10 +72,6 @@ int BasicOrin::initService() {
           "fbk_get_ctrl_obj_servo_version",
           std::bind(&BasicOrin::handle_FbkGetCtrlObjServoVersion_request, this,
                     std::placeholders::_1, std::placeholders::_2));
-  //   serviceGetSystemMsg_ = this->create_service<FbkGetSystemMsg>(
-  //       "fbk_get_system_msg",
-  //       std::bind(&BasicOrin::handle_FbkGetSystemMsg_request, this,
-  //                 std::placeholders::_1, std::placeholders::_2));
   serviceGetUserData_ = this->create_service<FbkGetUserData>(
       "fbk_get_user_data",
       std::bind(&BasicOrin::handle_FbkGetUserData_request, this,
@@ -340,51 +336,55 @@ int BasicOrin::initService() {
 
 // --------------------------------------------------
 int BasicOrin::initTopic() {
+  // pub---------------------------------------
+  pubArm0GetData_ =
+      this->create_publisher<Arm0HandGetData>("/robot/arm0_hand_get_data", 50);
+  pubArm1GetData_ =
+      this->create_publisher<Arm1HandGetData>("/robot/amr1_hand_get_data", 50);
+
+  pubGetSystemMsg_ =
+      this->create_publisher<FbkGetSystemMsg>("/robot/fbk_get_system_msg", 50);
+
+  pubRobotSG_ = this->create_publisher<RobotSG>("/robot/robot_sg", 250);
+  pubRobotRT_ = this->create_publisher<RobotRT>("/robot/robot_rt", 500);
+
+  pubStateArm0_ =
+      this->create_publisher<FXStateTypeArm0>("/robot/state_type_arm0", 50);
+  pubStateArm1_ =
+      this->create_publisher<FXStateTypeArm1>("/robot/state_type_arm1", 50);
+  pubStateBody_ =
+      this->create_publisher<FXStateTypeBody>("/robot/state_type_body", 50);
+  pubStateHead_ =
+      this->create_publisher<FXStateTypeHead>("/robot/state_type_head", 50);
+  pubStateLift_ =
+      this->create_publisher<FXStateTypeLift>("/robot/state_type_lift", 50);
+
+  pubArm0CanFDGet_ = this->create_publisher<TerminalArm0CanFDGetData>(
+      "/robot/terminal_arm0_can_fd_get_data", 50);
+  pubArm1CanFDGet_ = this->create_publisher<TerminalArm1CanFDGetData>(
+      "/robot/terminal_arm1_can_fd_get_data", 50);
+
+  //---------------------------------------
+  timerSG_ =
+      this->create_wall_timer(std::chrono::milliseconds(10),
+                              std::bind(&BasicOrin::timerSGCallback, this));
+  timerRT_ =
+      this->create_wall_timer(std::chrono::milliseconds(10),
+                              std::bind(&BasicOrin::timerRTCallback, this));
+  timerStateType_ = this->create_wall_timer(
+      std::chrono::milliseconds(10),
+      std::bind(&BasicOrin::timerStateTypeCallback, this));
+
   // sub ---------------------------------------
 
-  subStopTraj_ = this->create_subscription<RuntimeStopTraj>(
-      "/robot/runtime_stop_traj", 100,
-      std::bind(&BasicOrin::handle_RuntimeStopTraj_callback, this,
+  subArm0HandSetData_ = this->create_subscription<Arm0HandSetData>(
+      "/robot/arm0_hand_set_data", 100,
+      std::bind(&BasicOrin::handle_Arm0HandSetData_callback, this,
                 std::placeholders::_1));
 
-  subSetVelRatio_ = this->create_subscription<RuntimeSetVelRatio>(
-      "/robot/runtime_set_vel_ratio", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetVelRatio_callback, this,
-                std::placeholders::_1));
-
-  subSetTorqueCtrl_ = this->create_subscription<RuntimeSetTorqueCtrl>(
-      "/robot/runtime_set_torque_ctrl", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetTorqueCtrl_callback, this,
-                std::placeholders::_1));
-
-  subSetToolKD_ = this->create_subscription<RuntimeSetToolKD>(
-      "/robot/runtime_set_tool_kd", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetToolKD_callback, this,
-                std::placeholders::_1));
-
-  subSetToolK_ = this->create_subscription<RuntimeSetToolK>(
-      "/robot/runtime_set_tool_k", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetToolK_callback, this,
-                std::placeholders::_1));
-
-  subSetToolD_ = this->create_subscription<RuntimeSetToolD>(
-      "/robot/runtime_set_tool_d", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetToolD_callback, this,
-                std::placeholders::_1));
-
-  subSetTag_ = this->create_subscription<RuntimeSetTag>(
-      "/robot/runtime_set_tag", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetTag_callback, this,
-                std::placeholders::_1));
-
-  subSetSpeedRatio_ = this->create_subscription<RuntimeSetSpeedRatio>(
-      "/robot/runtime_set_speed_ratio", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetSpeedRatio_callback, this,
-                std::placeholders::_1));
-
-  subSetJointMITCmd_ = this->create_subscription<RuntimeSetJointMITCmd>(
-      "/robot/runtime_set_joint_mit_cmd", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetJointMITCmd_callback, this,
+  subArm1HandSetData_ = this->create_subscription<Arm1HandSetData>(
+      "/robot/arm1_hand_set_data", 100,
+      std::bind(&BasicOrin::handle_Arm1HandSetData_callback, this,
                 std::placeholders::_1));
 
   subSetJointKD_ = this->create_subscription<RuntimeSetJointKD>(
@@ -392,14 +392,18 @@ int BasicOrin::initTopic() {
       std::bind(&BasicOrin::handle_RuntimeSetJointKD_callback, this,
                 std::placeholders::_1));
 
+  subSetJointD_ = this->create_subscription<RuntimeSetJointD>(
+      "/robot/runtime_set_joint_d", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetJointD_callback, this,
+                std::placeholders::_1));
   subSetJointK_ = this->create_subscription<RuntimeSetJointK>(
       "/robot/runtime_set_joint_k", 100,
       std::bind(&BasicOrin::handle_RuntimeSetJointK_callback, this,
                 std::placeholders::_1));
 
-  subSetJointD_ = this->create_subscription<RuntimeSetJointD>(
-      "/robot/runtime_set_joint_d", 100,
-      std::bind(&BasicOrin::handle_RuntimeSetJointD_callback, this,
+  subSetJointMITCmd_ = this->create_subscription<RuntimeSetJointMITCmd>(
+      "/robot/runtime_set_joint_mit_cmd", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetJointMITCmd_callback, this,
                 std::placeholders::_1));
 
   subSetJointPosCmd_ = this->create_subscription<RuntimeSetJointPosCmd>(
@@ -412,21 +416,55 @@ int BasicOrin::initTopic() {
       std::bind(&BasicOrin::handle_RuntimeSetJointPosPDCmd_callback, this,
                 std::placeholders::_1));
 
-  // pub---------------------------------------
-  pubRobotSG_ = this->create_publisher<RobotSG>("/robot/sg_feedback", 250);
-  pubRobotRT_ = this->create_publisher<RobotRT>("/robot/rt_feedback", 500);
-  pubStateArm0_ =
-      this->create_publisher<FXStateTypeArm0>("/robot/state_arm0", 100);
-  //---------------------------------------
-  timerSG_ =
-      this->create_wall_timer(std::chrono::milliseconds(1000),
-                              std::bind(&BasicOrin::timerSGCallback, this));
-  timerRT_ =
-      this->create_wall_timer(std::chrono::milliseconds(1000),
-                              std::bind(&BasicOrin::timerRTCallback, this));
-  timerStateType_ = this->create_wall_timer(
-      std::chrono::milliseconds(50),
-      std::bind(&BasicOrin::timerStateArm0Callback, this));
+  subSetSpeedRatio_ = this->create_subscription<RuntimeSetSpeedRatio>(
+      "/robot/runtime_set_speed_ratio", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetSpeedRatio_callback, this,
+                std::placeholders::_1));
+
+  subSetTag_ = this->create_subscription<RuntimeSetTag>(
+      "/robot/runtime_set_tag", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetTag_callback, this,
+                std::placeholders::_1));
+
+  subSetToolD_ = this->create_subscription<RuntimeSetToolD>(
+      "/robot/runtime_set_tool_d", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetToolD_callback, this,
+                std::placeholders::_1));
+
+  subSetToolK_ = this->create_subscription<RuntimeSetToolK>(
+      "/robot/runtime_set_tool_k", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetToolK_callback, this,
+                std::placeholders::_1));
+
+  subSetToolKD_ = this->create_subscription<RuntimeSetToolKD>(
+      "/robot/runtime_set_tool_kd", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetToolKD_callback, this,
+                std::placeholders::_1));
+
+  subSetTorqueCtrl_ = this->create_subscription<RuntimeSetTorqueCtrl>(
+      "/robot/runtime_set_torque_ctrl", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetTorqueCtrl_callback, this,
+                std::placeholders::_1));
+
+  subSetVelRatio_ = this->create_subscription<RuntimeSetVelRatio>(
+      "/robot/runtime_set_vel_ratio", 100,
+      std::bind(&BasicOrin::handle_RuntimeSetVelRatio_callback, this,
+                std::placeholders::_1));
+
+  subStopTraj_ = this->create_subscription<RuntimeStopTraj>(
+      "/robot/runtime_stop_traj", 100,
+      std::bind(&BasicOrin::handle_RuntimeStopTraj_callback, this,
+                std::placeholders::_1));
+
+  subArm0CanFDSet_ = this->create_subscription<TerminalArm0CanFDSetData>(
+      "/robot/terminal_arm0_can_fd_set_data", 100,
+      std::bind(&BasicOrin::handle_TerminalArm0CanFDSetData_callback, this,
+                std::placeholders::_1));
+
+  subArm1CanFDSet_ = this->create_subscription<TerminalArm1CanFDSetData>(
+      "/robot/terminal_arm1_can_fd_set_data", 100,
+      std::bind(&BasicOrin::handle_TerminalArm1CanFDSetData_callback, this,
+                std::placeholders::_1));
 }
 
 // Service
@@ -663,21 +701,6 @@ void BasicOrin::handle_FbkGetCtrlObjServoVersion_request(
               "Response FbkGetCtrlObjServoVersion: result = %d",
               response->result);
 }
-
-// void BasicOrin::handle_FbkGetSystemMsg_request(
-//     const std::shared_ptr<FbkGetSystemMsg::Request> request,
-//     std::shared_ptr<FbkGetSystemMsg::Response> response) {
-//   RCLCPP_INFO(this->get_logger(), "Received FbkGetSystemMsg request");
-
-//   response->result =
-//   FX_L1_Fbk_GetSystemMsg(response->msg.c_str(),response->); if
-//   (response->result > 0) {
-//     printf("Receive message from controller: %s\n", response->msg.c_str());
-//   }
-
-//   RCLCPP_INFO(this->get_logger(), "Response FbkGetSystemMsg: result = %d",
-//               response->result);
-// }
 
 void BasicOrin::handle_FbkGetUserData_request(
     const std::shared_ptr<FbkGetUserData::Request> request,
@@ -1495,87 +1518,65 @@ void BasicOrin::handle_TerminalClearData_request(
 
 // TOPIC
 // -------------------------------------------------------------------------------
-void BasicOrin::handle_RuntimeStopTraj_callback(const RuntimeStopTraj &msg) {
-  (void)msg;  // 避免未使用参数警告
-  RCLCPP_INFO(this->get_logger(), "RuntimeStopTraj callback called");
-  // TODO: 实现停止轨迹逻辑
+void BasicOrin::handle_Arm0HandSetData_callback(const Arm0HandSetData &msg) {
+  RCLCPP_INFO(this->get_logger(), "Topic Arm0HandSetData callback called");
+  int nRes = FX_L1_Hand_SetData(FX_OBJ_ARM0, (unsigned char *)msg.data.data());
+  if (nRes != FUNC_RET_SUCCESS) {
+    printf("Failed to send trajectory point");
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Topic Arm0HandSetData Result = %d !", nRes);
 }
 
-void BasicOrin::handle_RuntimeSetVelRatio_callback(
-    const RuntimeSetVelRatio &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetVelRatio callback called");
-  // TODO: 实现速度比例设置
+void BasicOrin::handle_Arm1HandSetData_callback(const Arm1HandSetData &msg) {
+  int nRes = FX_L1_Hand_SetData(FX_OBJ_ARM1, (unsigned char *)msg.data.data());
+  if (nRes != FUNC_RET_SUCCESS) {
+    printf("Failed to send trajectory point");
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Topic Arm1HandSetData Result = %d !", nRes);
 }
 
-void BasicOrin::handle_RuntimeSetTorqueCtrl_callback(
-    const RuntimeSetTorqueCtrl &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetTorqueCtrl callback called");
-  // TODO: 实现力矩控制设置
+void BasicOrin::handle_RuntimeSetJointD_callback(const RuntimeSetJointD &msg) {
+  int nRes = FX_L1_Runtime_SetJointD(msg.thread_id,
+                                     static_cast<FXObjType>(msg.obj_type),
+                                     const_cast<double *>(msg.d.data()));
+
+  RCLCPP_INFO(this->get_logger(), "Topic RuntimeSetJointD Result = %d !", nRes);
 }
 
-void BasicOrin::handle_RuntimeSetToolKD_callback(const RuntimeSetToolKD &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolKD callback called");
-  // TODO: 实现工具KD参数设置
-}
+void BasicOrin::handle_RuntimeSetJointK_callback(const RuntimeSetJointK &msg) {
+  int nRes = FX_L1_Runtime_SetJointK(msg.thread_id,
+                                     static_cast<FXObjType>(msg.obj_type),
+                                     const_cast<double *>(msg.k.data()));
 
-void BasicOrin::handle_RuntimeSetToolK_callback(const RuntimeSetToolK &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolK callback called");
-  // TODO: 实现工具K参数设置
-}
-
-void BasicOrin::handle_RuntimeSetToolD_callback(const RuntimeSetToolD &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolD callback called");
-  // TODO: 实现工具D参数设置
-}
-
-void BasicOrin::handle_RuntimeSetTag_callback(const RuntimeSetTag &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetTag callback called");
-  // TODO: 实现标签设置
-}
-
-void BasicOrin::handle_RuntimeSetSpeedRatio_callback(
-    const RuntimeSetSpeedRatio &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetSpeedRatio callback called");
-  // TODO: 实现速度倍率设置
-}
-
-void BasicOrin::handle_RuntimeSetJointMITCmd_callback(
-    const RuntimeSetJointMITCmd &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointMITCmd callback called");
-  // TODO: 实现MIT关节命令设置
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointK Result = %d !", nRes);
 }
 
 void BasicOrin::handle_RuntimeSetJointKD_callback(
     const RuntimeSetJointKD &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointKD callback called");
-  // TODO: 实现关节KD参数设置
+  int nRes = FX_L1_Runtime_SetJointKD(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type),
+      const_cast<double *>(msg.k.data()), const_cast<double *>(msg.d.data()));
+
+  RCLCPP_INFO(this->get_logger(), "Topic RuntimeSetJointKD Result = %d !",
+              nRes);
 }
 
-void BasicOrin::handle_RuntimeSetJointK_callback(const RuntimeSetJointK &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointK callback called");
-  // TODO: 实现关节K参数设置
-}
+void BasicOrin::handle_RuntimeSetJointMITCmd_callback(
+    const RuntimeSetJointMITCmd &msg) {
+  int nRes = FX_L1_Runtime_SetJointMITCmd(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type),
+      const_cast<double *>(msg.pos_cmd.data()),
+      const_cast<double *>(msg.vel_cmd.data()),
+      const_cast<double *>(msg.tor_cmd.data()),
+      const_cast<double *>(msg.k.data()), const_cast<double *>(msg.d.data()));
 
-void BasicOrin::handle_RuntimeSetJointD_callback(const RuntimeSetJointD &msg) {
-  (void)msg;
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointD callback called");
-  // TODO: 实现关节D参数设置
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointMITCmd Result = %d !", nRes);
 }
 
 void BasicOrin::handle_RuntimeSetJointPosCmd_callback(
     const RuntimeSetJointPosCmd &msg) {
-  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointPosCmd callback called");
-  // TODO: 实现关节位置命令设置
   int nRes = FX_L1_Runtime_SetJointPosCmd(
       msg.thread_id, static_cast<FXObjType>(msg.obj_type),
       const_cast<double *>(msg.pos_cmd.data()));
@@ -1587,34 +1588,116 @@ void BasicOrin::handle_RuntimeSetJointPosCmd_callback(
 
 void BasicOrin::handle_RuntimeSetJointPosPDCmd_callback(
     const RuntimeSetJointPosPDCmd &msg) {
-  RCLCPP_INFO(this->get_logger(),
-              "Topic /robot/runtime_set_joint_pos_pd_cmd, [2] = %f",
+  RCLCPP_INFO(this->get_logger(), "Topic RuntimeSetJointPosPDCmd, [2] = %f",
               msg.pos_cmd[2]);
-  if (FX_L1_Runtime_SetJointPosPDCmd(
-          msg.thread_id, static_cast<FXObjType>(msg.obj_type),
-          const_cast<double *>(msg.pos_cmd.data())) != FUNC_RET_SUCCESS) {
-    printf("Failed to send trajectory point");
+  int nRes = FX_L1_Runtime_SetJointPosPDCmd(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type),
+      const_cast<double *>(msg.pos_cmd.data()));
+
+  if (nRes != FUNC_RET_SUCCESS) {
+    printf("Failed to send trajectory point!\n");
   }
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetJointPosPDCmd Result = %d !",
+              nRes);
 }
 
-//--------------------------------------------------------------------------------------------
-void BasicOrin::publishRobotSG(const RobotSG &msg) {
-  pubRobotSG_->publish(msg);
+void BasicOrin::handle_RuntimeSetSpeedRatio_callback(
+    const RuntimeSetSpeedRatio &msg) {
+  int nRes = FX_L1_Runtime_SetSpeedRatio(msg.thread_id,
+                                         static_cast<FXObjType>(msg.obj_type),
+                                         msg.vel_ratio, msg.acc_ratio);
+  if (nRes != FUNC_RET_SUCCESS) {
+    printf("Failed to set %d velocity ratio. Error code: %d\n", msg.obj_type,
+           nRes);
+  }
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetSpeedRatio  Result = %d !", nRes);
 }
 
-void BasicOrin::publishRobotRT(const RobotRT &msg) {
-  pubRobotRT_->publish(msg);
+void BasicOrin::handle_RuntimeSetTag_callback(const RuntimeSetTag &msg) {
+  int nRes = FX_L1_Runtime_SetTag(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type), msg.tag);
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetTag  Result = %d !", nRes);
 }
 
-void BasicOrin::publishStateArm0(const FXStateTypeArm0 &msg) {
-  pubStateArm0_->publish(msg);
+void BasicOrin::handle_RuntimeSetToolD_callback(const RuntimeSetToolD &msg) {
+  int nRes = FX_L1_Runtime_SetToolD(msg.thread_id,
+                                    static_cast<FXObjType>(msg.obj_type),
+                                    const_cast<double *>(msg.d.data()));
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolD  Result = %d !", nRes);
+}
+
+void BasicOrin::handle_RuntimeSetToolK_callback(const RuntimeSetToolK &msg) {
+  int nRes = FX_L1_Runtime_SetToolK(msg.thread_id,
+                                    static_cast<FXObjType>(msg.obj_type),
+                                    const_cast<double *>(msg.k.data()));
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolK  Result = %d !", nRes);
+}
+
+void BasicOrin::handle_RuntimeSetToolKD_callback(const RuntimeSetToolKD &msg) {
+  int nRes = FX_L1_Runtime_SetToolKD(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type),
+      const_cast<double *>(msg.k.data()), const_cast<double *>(msg.d.data()));
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetToolKD  Result = %d !", nRes);
+}
+
+void BasicOrin::handle_RuntimeSetTorqueCtrl_callback(
+    const RuntimeSetTorqueCtrl &msg) {
+  int nRes = FX_L1_Runtime_SetTorqueCtrl(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type),
+      const_cast<double *>(msg.torque_ctrl.data()));
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetTorqueCtrl  Result = %d !", nRes);
+}
+
+void BasicOrin::handle_RuntimeSetVelRatio_callback(
+    const RuntimeSetVelRatio &msg) {
+  int nRes = FX_L1_Runtime_SetVelRatio(
+      msg.thread_id, static_cast<FXObjType>(msg.obj_type), msg.vel_ratio);
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeSetVelRatio  Result = %d !", nRes);
+}
+
+void BasicOrin::handle_RuntimeStopTraj_callback(const RuntimeStopTraj &msg) {
+  unsigned int nRes = FX_L1_Runtime_StopTraj(msg.thread_id, msg.obj_mask);
+
+  RCLCPP_INFO(this->get_logger(), "RuntimeStopTraj  Result = %u !", nRes);
+}
+
+void BasicOrin::handle_TerminalArm0CanFDSetData_callback(
+    const TerminalArm0CanFDSetData &msg) {
+  unsigned int sending_time = 0;
+  int nRes =
+      FX_L1_Terminal_SetData(FX_OBJ_ARM0, FX_CHN_CANFD, msg.timeout,
+                             const_cast<unsigned char *>(msg.data.data()),
+                             msg.data_len, &sending_time);
+
+  RCLCPP_INFO(this->get_logger(),
+              "TerminalArm0CanFDSetData sending_time = %u ,  Result = %d !",
+              sending_time, nRes);
+}
+
+void BasicOrin::handle_TerminalArm1CanFDSetData_callback(
+    const TerminalArm1CanFDSetData &msg) {
+  unsigned int sending_time = 0;
+
+  int nRes =
+      FX_L1_Terminal_SetData(FX_OBJ_ARM1, FX_CHN_CANFD, msg.timeout,
+                             const_cast<unsigned char *>(msg.data.data()),
+                             msg.data_len, &sending_time);
+
+  RCLCPP_INFO(this->get_logger(),
+              "TerminalArm1CanFDSetData sending_time = %u ,  Result = %d !",
+              sending_time, nRes);
 }
 
 //--------------------------------------------------------------------------------------------
 
 void BasicOrin::timerSGCallback() {
   if (!enable_publish_.load()) {
-    // RCLCPP_INFO(this->get_logger(), "Topic /robot/sg_feedback RETURN!");
     return;
   }
   std::lock_guard<std::mutex> lock(mtxSG_);
@@ -1622,10 +1705,12 @@ void BasicOrin::timerSGCallback() {
   if (sg_ptr_) {
     RobotSG msg;
     convertROBOT_SG_to_RobotSG(sg_ptr_, msg);
-    this->publishRobotSG(msg);
-    RCLCPP_INFO(this->get_logger(), "Publish Topic /robot/sg_feedback!");
+
+    pubRobotSG_->publish(msg);
+
+    RCLCPP_INFO(this->get_logger(), "Publish RobotSG");
   } else {
-    RCLCPP_INFO(this->get_logger(), "Publish Topic /robot/sg_feedback NULL!");
+    RCLCPP_INFO(this->get_logger(), "RobotSG NULL!");
   }
 }
 
@@ -1639,23 +1724,263 @@ void BasicOrin::timerRTCallback() {
   if (rt_ptr_) {
     RobotRT msg;
     convertROBOT_RT_to_RobotRT(rt_ptr_, msg);  // 穷举赋值
-    this->publishRobotRT(msg);
-    RCLCPP_INFO(this->get_logger(), "Publish Topic /robot/rt_feedback!");
+
+    pubRobotRT_->publish(msg);
+
+    RCLCPP_INFO(this->get_logger(), "Publish RobotRT!");
   } else {
-    RCLCPP_INFO(this->get_logger(), "Topic /robot/rt_feedback NULL!");
+    RCLCPP_INFO(this->get_logger(), "RobotRT NULL!");
   }
 }
 
-void BasicOrin::timerStateArm0Callback() {
+void BasicOrin::timerStateTypeCallback() {
   if (!enable_publish_.load()) {
     return;
   }
   std::lock_guard<std::mutex> lock(mtxStateType_);
 
   stateArm0_ = FX_L1_Fbk_CurrentState(FX_OBJ_ARM0);  ///< Real-time feedback
-  FXStateTypeArm0 msg;
-  msg.state_type = stateArm0_;
-  this->publishStateArm0(msg);
+  stateArm1_ = FX_L1_Fbk_CurrentState(FX_OBJ_ARM1);
+  stateHead_ = FX_L1_Fbk_CurrentState(FX_OBJ_HEAD);
+  stateBody_ = FX_L1_Fbk_CurrentState(FX_OBJ_BODY);
+  stateLift_ = FX_L1_Fbk_CurrentState(FX_OBJ_LIFT);
+
+  FXStateTypeArm0 msgArm0;
+  msgArm0.state_type = stateArm0_;
+  pubStateArm0_->publish(msgArm0);
+
+  FXStateTypeArm1 msgeArm1;
+  msgeArm1.state_type = stateArm1_;
+  pubStateArm1_->publish(msgeArm1);
+
+  FXStateTypeHead msgHead;
+  msgHead.state_type = stateHead_;
+  pubStateHead_->publish(msgHead);
+
+  FXStateTypeBody msgBody;
+  msgBody.state_type = stateBody_;
+  pubStateBody_->publish(msgBody);
+
+  FXStateTypeLift msgLift;
+  msgLift.state_type = stateLift_;
+  pubStateLift_->publish(msgLift);
+
   RCLCPP_INFO(this->get_logger(),
-              "Publish Topic /robot/state_arm0 ,state = %d!", stateArm0_);
+              "Publish state_type_arm0/arm1/head/body/lift -- %d %d %d %d %d",
+              stateArm0_, stateArm1_, stateHead_, stateBody_, stateLift_);
+}
+
+//--------------------------------------------------------------------------------
+void BasicOrin::convertROBOT_SG_to_RobotSG(const ROBOT_SG *sg_ptr,
+                                           RobotSG &msg) {
+  if (!sg_ptr) return;
+
+  // ---- 顶层字段 ----
+  msg.sg_frame_serial = sg_ptr->m_SG_FrameSerial;
+
+  // ========== 头部 (HeadSG) ==========
+  // HeadSet
+  msg.head.head_set.vel_ratio = sg_ptr->m_HEAD.m_HEAD_SET.m_HEAD_Ctrl_VelRatio;
+  msg.head.head_set.acc_ratio = sg_ptr->m_HEAD.m_HEAD_SET.m_HEAD_Ctrl_AccRatio;
+
+  // HeadGet
+  for (int i = 0; i < 3; ++i) {
+    msg.head.head_get.fbk_joint_tor[i] =
+        sg_ptr->m_HEAD.m_HEAD_GET.m_HEAD_FBK_Joint_Tor[i];
+    msg.head.head_get.fbk_joint_ext_pos[i] =
+        sg_ptr->m_HEAD.m_HEAD_GET.m_HEAD_FBK_Joint_ExtPos[i];
+    msg.head.head_get.fbk_joint_temp[i] =
+        sg_ptr->m_HEAD.m_HEAD_GET.m_HEAD_FBK_Joint_Temp[i];
+  }
+  // 注意：head_get.pad 在 ROS2 消息中没有对应字段，忽略
+
+  // ========== 手臂 (ArmSG) 两个 ==========
+  for (int arm_idx = 0; arm_idx < 2; ++arm_idx) {
+    const ARM_SG &c_arm = sg_ptr->m_ARMS[arm_idx];
+    auto &ros_arm = msg.arms[arm_idx];
+
+    // ArmSet
+    ros_arm.arm_set.ctrl_imp_type = c_arm.m_ARM_SET.m_ARM_Ctrl_ImpType;
+    ros_arm.arm_set.ctrl_vel_ratio = c_arm.m_ARM_SET.m_ARM_Ctrl_VelRatio;
+    ros_arm.arm_set.ctrl_acc_ratio = c_arm.m_ARM_SET.m_ARM_Ctrl_AccRatio;
+    for (int i = 0; i < 7; ++i) {
+      ros_arm.arm_set.ctrl_joint_k[i] = c_arm.m_ARM_SET.m_ARM_Ctrl_JointK[i];
+      ros_arm.arm_set.ctrl_joint_d[i] = c_arm.m_ARM_SET.m_ARM_Ctrl_JointD[i];
+      ros_arm.arm_set.ctrl_cart_k[i] = c_arm.m_ARM_SET.m_ARM_Ctrl_CartK[i];
+      ros_arm.arm_set.ctrl_cart_d[i] = c_arm.m_ARM_SET.m_ARM_Ctrl_CartD[i];
+    }
+    for (int i = 0; i < 6; ++i) {
+      ros_arm.arm_set.ctrl_tool_kine[i] =
+          c_arm.m_ARM_SET.m_ARM_Ctrl_ToolKine[i];
+    }
+    for (int i = 0; i < 10; ++i) {
+      ros_arm.arm_set.ctrl_tool_dyna[i] =
+          c_arm.m_ARM_SET.m_ARM_Ctrl_ToolDyna[i];
+    }
+
+    // ArmGet
+    for (int i = 0; i < 7; ++i) {
+      ros_arm.arm_get.fbk_joint_tor[i] = c_arm.m_ARM_GET.m_ARM_FBK_Joint_Tor[i];
+      ros_arm.arm_get.fbk_joint_ext_pos[i] =
+          c_arm.m_ARM_GET.m_ARM_FBK_Joint_ExtPos[i];
+      ros_arm.arm_get.fbk_joint_temp[i] =
+          c_arm.m_ARM_GET.m_ARM_FBK_Joint_Temp[i];
+    }
+    ros_arm.arm_get.fbk_flange_di = c_arm.m_ARM_GET.m_ARM_FBK_Flange_DI;
+    ros_arm.arm_get.fbk_low_spd_flag = c_arm.m_ARM_GET.m_ARM_FBK_LowSpdFlag;
+    ros_arm.arm_get.fbk_traj_state = c_arm.m_ARM_GET.m_ARM_FBK_TrajState;
+    ros_arm.arm_get.fbk_pd_cmd_quality =
+        c_arm.m_ARM_GET.m_ARM_FBK_PD_CmdQuality;
+    // 注意：arm_get.pad 在 ROS2 消息中没有，忽略
+  }
+  // ========== 身体 (BodySG) ==========
+  const BODY_SG &c_body = sg_ptr->m_BODY;
+  auto &ros_body = msg.body;
+
+  // BodySet
+  ros_body.body_set.ctrl_vel_ratio = c_body.m_BODY_SET.m_BODY_Ctrl_VelRatio;
+  ros_body.body_set.ctrl_acc_ratio = c_body.m_BODY_SET.m_BODY_Ctrl_AccRatio;
+  for (int i = 0; i < 6; ++i) {
+    ros_body.body_set.ctrl_pd_k[i] = c_body.m_BODY_SET.m_BODY_Ctrl_PDK[i];
+    ros_body.body_set.ctrl_pd_d[i] = c_body.m_BODY_SET.m_BODY_Ctrl_PDD[i];
+  }
+
+  // BodyGet
+  for (int i = 0; i < 6; ++i) {
+    ros_body.body_get.fbk_joint_tor[i] =
+        c_body.m_BODY_GET.m_BODY_FBK_Joint_Tor[i];
+    ros_body.body_get.fbk_joint_ext_pos[i] =
+        c_body.m_BODY_GET.m_BODY_FBK_Joint_ExtPos[i];
+    ros_body.body_get.fbk_joint_temp[i] =
+        c_body.m_BODY_GET.m_BODY_FBK_Joint_Temp[i];
+  }
+  ros_body.body_get.fbk_traj_state = c_body.m_BODY_GET.m_BODY_FBK_TrajState;
+  ros_body.body_get.fbk_pd_cmd_quality =
+      c_body.m_BODY_GET.m_BODY_FBK_PD_CmdQuality;
+
+  // ========== 升降 (LiftSG) ==========
+  const LIFT_SG &c_lift = sg_ptr->m_LIFT;
+  auto &ros_lift = msg.lift;
+
+  // LiftSet
+  ros_lift.lift_set.ctrl_vel_ratio = c_lift.m_LIFT_SET.m_LIFT_Ctrl_VelRatio;
+  ros_lift.lift_set.ctrl_acc_ratio = c_lift.m_LIFT_SET.m_LIFT_Ctrl_AccRatio;
+
+  // LiftGet
+  for (int i = 0; i < 2; ++i) {
+    ros_lift.lift_get.fbk_joint_tor[i] =
+        c_lift.m_LIFT_GET.m_LIFT_FBK_Joint_Tor[i];
+  }
+  ros_lift.lift_get.fbk_traj_state = c_lift.m_LIFT_GET.m_LIFT_FBK_TrajState;
+  // lift_get.pad 忽略
+}
+
+//------------------------------------------------------------------------------------------------------------------
+void BasicOrin::convertROBOT_RT_to_RobotRT(const ROBOT_RT *rt_ptr,
+                                           RobotRT &msg) {
+  if (!rt_ptr) return;
+
+  // ===== 顶层 =====
+  msg.rt_frame_serial = rt_ptr->m_RT_FrameSerial;
+  // msg.wait_serial = rt_ptr->wait_serial;
+  // for (int i = 0; i < 3; ++i)
+  //     msg.pad[i] = rt_ptr->pad[i];
+
+  // ===== DeviceRT =====
+  for (int i = 0; i < 6; ++i)
+    msg.device.base_gyro[i] = rt_ptr->m_DEVICE.m_DEVICE_FBK_Base_Gyro[i];
+
+  // ===== HeadRT =====
+  // HeadIn
+  for (int i = 0; i < 3; ++i)
+    msg.head.head_in.cmd_joint_pos[i] =
+        rt_ptr->m_HEAD.m_HEAD_IN.m_HEAD_CMD_Joint_Pos[i];
+
+  // HeadOut
+  for (int i = 0; i < 3; ++i)
+    msg.head.head_out.fbk_joint_pos[i] =
+        rt_ptr->m_HEAD.m_HEAD_OUT.m_HEAD_FBK_Joint_Pos[i];
+
+  // ===== Arms (2) =====
+  for (int arm = 0; arm < 2; ++arm) {
+    const ARM_RT &c = rt_ptr->m_ARMS[arm];
+    auto &r = msg.arms[arm];
+
+    // StateCtr
+    r.state.cur_state = c.m_ARM_State.m_CurState;
+    r.state.cmd_state = c.m_ARM_State.m_CmdState;
+    r.state.err_code = c.m_ARM_State.m_ERRCode;
+
+    // ArmIn
+    for (int i = 0; i < 7; ++i) {
+      r.arm_in.cmd_joint_tor[i] = c.m_ARM_IN.m_ARM_CMD_Joint_Tor[i];
+      r.arm_in.cmd_joint_pos[i] = c.m_ARM_IN.m_ARM_CMD_Joint_Pos[i];
+    }
+    r.arm_in.cmd_ctrl_drag_type = c.m_ARM_IN.m_ARM_CMD_Ctrl_DragType;
+
+    for (int i = 0; i < 5; ++i) {
+      r.arm_in.cmd_ctrl_force_dir[i] = c.m_ARM_IN.m_ARM_CMD_Ctrl_ForceDir[i];
+      r.arm_in.cmd_ctrl_torque_dir[i] = c.m_ARM_IN.m_ARM_CMD_Ctrl_TorqueDir[i];
+    }
+    r.arm_in.cmd_tag = c.m_ARM_IN.m_ARM_CMD_Tag;
+    r.arm_in.cmd_pd_serial = c.m_ARM_IN.m_ARM_CMD_PD_Serial;
+
+    // ArmOut
+    for (int i = 0; i < 7; ++i) {
+      r.arm_out.fbk_joint_pos[i] = c.m_ARM_OUT.m_ARM_FBK_Joint_Pos[i];
+      r.arm_out.fbk_joint_vel[i] = c.m_ARM_OUT.m_ARM_FBK_Joint_Vel[i];
+      r.arm_out.fbk_joint_cmd[i] = c.m_ARM_OUT.m_ARM_FBK_Joint_Cmd[i];
+      r.arm_out.fbk_joint_sensor_tor[i] =
+          c.m_ARM_OUT.m_ARM_FBK_Joint_SensorTor[i];
+      r.arm_out.fbk_joint_external_tor_est[i] =
+          c.m_ARM_OUT.m_ARM_FBK_Joint_ExternalTorEst[i];
+    }
+    for (int i = 0; i < 6; ++i) {
+      r.arm_out.fbk_base_fn_est[i] = c.m_ARM_OUT.m_ARM_FBK_Base_FNEst[i];
+      r.arm_out.fbk_flange_ft_sensor[i] =
+          c.m_ARM_OUT.m_ARM_FBK_Flange_FTSensor[i];
+    }
+  }
+
+  // ===== BodyRT =====
+  // 根据您的 BodyRT 定义，没有 state，只有 body_in 和 body_out
+  const BODY_RT &cb = rt_ptr->m_BODY;
+  auto &rb = msg.body;
+
+  rb.body_in.cmd_ctrl_type = cb.m_BODY_IN.m_BODY_CMD_Ctrl_Type;
+  for (int i = 0; i < 6; ++i) {
+    rb.body_in.cmd_joint_pos[i] = cb.m_BODY_IN.m_BODY_CMD_Joint_Pos[i];
+    rb.body_out.fbk_joint_pos[i] = cb.m_BODY_OUT.m_BODY_FBK_Joint_Pos[i];
+    rb.body_out.fbk_joint_vel[i] = cb.m_BODY_OUT.m_BODY_FBK_Joint_Vel[i];
+    rb.body_out.fbk_joint_sensor_tor[i] =
+        cb.m_BODY_OUT.m_BODY_FBK_Joint_SensorTor[i];
+  }
+  rb.body_in.cmd_tag = cb.m_BODY_IN.m_BODY_CMD_Tag;
+  rb.body_in.cmd_pd_serial = cb.m_BODY_IN.m_BODY_CMD_PD_Serial;
+
+  // ===== LiftRT =====
+  const LIFT_RT &cl = rt_ptr->m_LIFT;
+  auto &rl = msg.lift;
+
+  for (int i = 0; i < 2; ++i) {
+    rl.lift_in.cmd_joint_pos[i] = cl.m_LIFT_IN.m_LIFT_CMD_Joint_Pos[i];
+    rl.lift_out.fbk_joint_pos[i] = cl.m_LIFT_OUT.m_LIFT_FBK_Joint_Pos[i];
+  }
+
+  //===== SystemRT =====
+  auto &sr = rt_ptr->m_SYSTEM;
+  auto &syst = msg.system;
+
+  // 从 sr 复制到 syst
+  std::copy(std::begin(sr.m_SYSTEM_UserFbk_Type),
+            std::end(sr.m_SYSTEM_UserFbk_Type),
+            syst.system_user_fbk_type.begin());
+  std::copy(std::begin(sr.m_SYSTEM_UserFbk0), std::end(sr.m_SYSTEM_UserFbk0),
+            syst.system_user_fbk0.begin());
+  std::copy(std::begin(sr.m_SYSTEM_UserFbk1), std::end(sr.m_SYSTEM_UserFbk1),
+            syst.system_user_fbk1.begin());
+  std::copy(std::begin(sr.m_SYSTEM_UserFbk2), std::end(sr.m_SYSTEM_UserFbk2),
+            syst.system_user_fbk2.begin());
+  std::copy(std::begin(sr.m_SYSTEM_UserFbk3), std::end(sr.m_SYSTEM_UserFbk3),
+            syst.system_user_fbk3.begin());
 }

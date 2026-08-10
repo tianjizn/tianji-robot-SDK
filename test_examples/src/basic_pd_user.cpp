@@ -16,17 +16,17 @@ BasicPDUser::BasicPDUser() : Node("basic_pd_user") {
       this->create_client<StateSwitchToPosition>("state_switch_to_position");
 
   subscription0_ = this->create_subscription<RobotRT>(
-      "/robot/rt_feedback", 500,
+      "/robot/robot_rt", 500,
       std::bind(&BasicPDUser::handle_RobotRT_callback, this,
                 std::placeholders::_1));
 
   subscription1_ = this->create_subscription<RobotSG>(
-      "/robot/sg_feedback", 250,
+      "/robot/robot_sg", 250,
       std::bind(&BasicPDUser::handle_RobotSG_callback, this,
                 std::placeholders::_1));
 
   subscription2_ = this->create_subscription<FXStateTypeArm0>(
-      "/robot/state_arm0", 100,
+      "/robot/state_type_arm0", 100,
       std::bind(&BasicPDUser::handle_StateArm0_callback, this,
                 std::placeholders::_1));
 
@@ -392,7 +392,7 @@ BasicPDUser::send_StateSwitchToPosition_request(uint8_t obj_type,
 
 //----------------------------------------------------------------------------------------
 void BasicPDUser::handle_RobotRT_callback(RobotRT::SharedPtr msg) {
-  static int i = 0;
+  // static int i = 0;
   if (!msg) {
     return;
   }
@@ -402,11 +402,12 @@ void BasicPDUser::handle_RobotRT_callback(RobotRT::SharedPtr msg) {
   } else {
     std::swap(rt_ptr_, msg);
   }
-  printf("Get Topic RobotRT %d!\n", i++);
+  // printf("Get Topic RobotRT %d!\n", i++);
+  printf("Get Topic RobotRT !\n");
 }
 
 void BasicPDUser::handle_RobotSG_callback(RobotSG::SharedPtr msg) {
-  static int j = 0;
+  // static int j = 0;
   if (!msg) {
     return;
   }
@@ -416,7 +417,8 @@ void BasicPDUser::handle_RobotSG_callback(RobotSG::SharedPtr msg) {
   } else {
     std::swap(sg_ptr_, msg);
   }
-  printf("Get Topic RobotSG %d!\n", j++);
+  // printf("Get Topic RobotSG %d!\n", j++);
+  printf("Get Topic RobotSG !\n");
 }
 
 void BasicPDUser::handle_StateArm0_callback(FXStateTypeArm0::SharedPtr msg) {
