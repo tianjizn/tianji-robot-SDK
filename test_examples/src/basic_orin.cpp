@@ -341,13 +341,10 @@ int BasicOrin::initTopic() {
       this->create_publisher<Arm0HandGetData>("/robot/arm0_hand_get_data", 50);
   pubArm1GetData_ =
       this->create_publisher<Arm1HandGetData>("/robot/amr1_hand_get_data", 50);
-
   pubGetSystemMsg_ =
       this->create_publisher<FbkGetSystemMsg>("/robot/fbk_get_system_msg", 50);
-
   pubRobotSG_ = this->create_publisher<RobotSG>("/robot/robot_sg", 250);
   pubRobotRT_ = this->create_publisher<RobotRT>("/robot/robot_rt", 500);
-
   pubStateArm0_ =
       this->create_publisher<FXStateTypeArm0>("/robot/state_type_arm0", 50);
   pubStateArm1_ =
@@ -363,7 +360,6 @@ int BasicOrin::initTopic() {
       "/robot/terminal_arm0_can_fd_get_data", 50);
   pubArm1CanFDGet_ = this->create_publisher<TerminalArm1CanFDGetData>(
       "/robot/terminal_arm1_can_fd_get_data", 50);
-
   //---------------------------------------
   timerSG_ =
       this->create_wall_timer(std::chrono::milliseconds(10),
@@ -374,6 +370,14 @@ int BasicOrin::initTopic() {
   timerStateType_ = this->create_wall_timer(
       std::chrono::milliseconds(10),
       std::bind(&BasicOrin::timerStateTypeCallback, this));
+
+  timerCanFDarm0_ = this->create_wall_timer(
+      std::chrono::milliseconds(500),
+      std::bind(&BasicOrin::timerCanFDarm0Callback, this));
+
+  timerCanFDarm1_ = this->create_wall_timer(
+      std::chrono::milliseconds(500),
+      std::bind(&BasicOrin::timerCanFDarm1Callback, this));
 
   // sub ---------------------------------------
 
@@ -1708,7 +1712,7 @@ void BasicOrin::timerSGCallback() {
 
     pubRobotSG_->publish(msg);
 
-    RCLCPP_INFO(this->get_logger(), "Publish RobotSG");
+    // RCLCPP_INFO(this->get_logger(), "Publish RobotSG");
   } else {
     RCLCPP_INFO(this->get_logger(), "RobotSG NULL!");
   }
@@ -1727,7 +1731,7 @@ void BasicOrin::timerRTCallback() {
 
     pubRobotRT_->publish(msg);
 
-    RCLCPP_INFO(this->get_logger(), "Publish RobotRT!");
+    // RCLCPP_INFO(this->get_logger(), "Publish RobotRT!");
   } else {
     RCLCPP_INFO(this->get_logger(), "RobotRT NULL!");
   }
@@ -1765,9 +1769,86 @@ void BasicOrin::timerStateTypeCallback() {
   msgLift.state_type = stateLift_;
   pubStateLift_->publish(msgLift);
 
-  RCLCPP_INFO(this->get_logger(),
-              "Publish state_type_arm0/arm1/head/body/lift -- %d %d %d %d %d",
-              stateArm0_, stateArm1_, stateHead_, stateBody_, stateLift_);
+  // RCLCPP_INFO(this->get_logger(),
+  //             "Publish state_type_arm0/arm1/head/body/lift -- %d %d %d %d
+  //             %d", stateArm0_, stateArm1_, stateHead_, stateBody_,
+  //             stateLift_);
+}
+
+void BasicOrin::timerCanFDarm0Callback() {
+  return;
+  if (!enable_publish_) return;
+  FXObjType obj_type = FXObjType::FX_OBJ_ARM0;
+  unsigned int timeout = 500;
+  FXChnType chn_type = FXChnType::FX_CHN_CANFD;  // 默认值，会被函数修改
+  unsigned char data[64] = {0};                  // 初始化为0
+  unsigned int receiving_time = 0;
+
+  // 2. 调用函数
+  int ret = FX_L1_Terminal_GetData(obj_type, timeout,
+                                   &chn_type,  // 取地址传递
+                                   data,       // 数组名自动转为指针
+                                   &receiving_time  // 取地址传递
+  );
+  if (ret < 0) {
+    printf("Error: CanFDarm0 FX_L1_Terminal_GetData failed with code %d\n",
+           ret);
+    return;
+  }
+  TerminalArm0CanFDGetData msg;
+  std::copy(data, data + 64, msg.data.begin());
+  msg.receiving_time = receiving_time;
+
+  pubArm0CanFDGet_->publish(msg);
+
+  std::stringstream ss;
+  ss << "CanFDarm0 Data [";
+  for (size_t i = 0; i < msg.data.size(); ++i) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(msg.data[i]);
+    if (i < msg.data.size() - 1) ss << " ";
+  }
+  ss << "]";
+
+  RCLCPP_INFO(rclcpp::get_logger("logger"), "%s", ss.str().c_str());
+}
+
+void BasicOrin::timerCanFDarm1Callback() {
+  return;
+  if (!enable_publish_) return;
+  FXObjType obj_type = FXObjType::FX_OBJ_ARM1;
+  unsigned int timeout = 500;
+  FXChnType chn_type = FXChnType::FX_CHN_CANFD;  // 默认值，会被函数修改
+  unsigned char data[64] = {0};                  // 初始化为0
+  unsigned int receiving_time = 0;
+
+  int ret = FX_L1_Terminal_GetData(obj_type, timeout,
+                                   &chn_type,  // 取地址传递
+                                   data,       // 数组名自动转为指针
+                                   &receiving_time  // 取地址传递
+  );
+  if (ret < 0) {
+    printf("Error: CanFDarm1 FX_L1_Terminal_GetData failed with code %d\n",
+           ret);
+    return;
+  }
+
+  TerminalArm1CanFDGetData msg;
+  std::copy(data, data + 64, msg.data.begin());
+  msg.receiving_time = receiving_time;
+
+  pubArm1CanFDGet_->publish(msg);
+
+  std::stringstream ss;
+  ss << "CanFDarm1 Data [";
+  for (size_t i = 0; i < msg.data.size(); ++i) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(msg.data[i]);
+    if (i < msg.data.size() - 1) ss << " ";
+  }
+  ss << "]";
+
+  RCLCPP_INFO(rclcpp::get_logger("logger"), "%s", ss.str().c_str());
 }
 
 //--------------------------------------------------------------------------------

@@ -2020,26 +2020,25 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<BasicPDUser>();
 
-  // 创建单线程执行器，并添加节点
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
-  node->setExecutor(&executor);  // 让所有 send_XXX 使用这个执行器
+  node->setExecutor(&executor);
 
   for (int i = 0; i < TRAJ_POINT_NUM; ++i) {
     std::copy(pos_array1[i], pos_array1[i] + 7, pos_array[i].begin());
   }
 
-  int pd_cycle_time = 0;  ///< PD command cycle time (ms)
+  int pd_cycle_time = 0;
 
   std::array<double, 7> k = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
   std::array<double, 7> d = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
-  double vel_ratio = 100.0;  ///< Velocity scaling ratio (%)
-  double acc_ratio = 100.0;  ///< Acceleration scaling ratio (%)
+  double vel_ratio = 100.0;
+  double acc_ratio = 100.0;
 
   std::array<double, 7> mechanical_home = {0};
 
-  int comm_quality = 0;  ///< Current PD command quality
+  int comm_quality = 0;
   int statistics_comm_quality_average = 0;
   int statistics_comm_quality_worst = 0;
 
@@ -2063,7 +2062,6 @@ int main(int argc, char **argv) {
                 responseLink->latency, responseLink->result);
   } else {
     RCLCPP_ERROR(node->get_logger(), "Failed to link system\n");
-    // goto WAIT_EXIT;
     printf("Press any key to exit\n");
     rclcpp::shutdown();
     return 0;
@@ -2085,16 +2083,15 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  // auto responseObjState = node->send_FbkGetCurrentState_request(FX_OBJ_ARM0);
-  printf("StateArm0 = %d\n", node->getStateArm0());
-  if (node->getStateArm0() == FX_STATE_ERROR) {
-    printf("Arm0 is in STATE_ERROR, press any key to reset error\n");
+  printf("StateArm1 = %d\n", node->getStateArm1());
+  if (node->getStateArm1() == FX_STATE_ERROR) {
+    printf("Arm1 is in STATE_ERROR, press any key to reset error\n");
     getchar();
-    auto responseError = node->send_StateResetError_request(FX_OBJ_ARM0, 1000);
+    auto responseError = node->send_StateResetError_request(FX_OBJ_ARM1, 1000);
     if (responseError) {
       if (responseError->system_errorcode != FUNC_RET_SUCCESS) {
         RCLCPP_ERROR(node->get_logger(),
-                     "Failed to reset arm0 error, errorcode = 0x%08x\n",
+                     "Failed to reset arm1 error, errorcode = 0x%08x\n",
                      responseError->system_errorcode);
         rclcpp::shutdown();
         return 0;
@@ -2106,15 +2103,14 @@ int main(int argc, char **argv) {
       rclcpp::shutdown();
       return 0;
     }
-  } else if (node->getStateArm0() != FX_STATE_IDLE) {
-    printf("Arm0 is not in STATE_IDLE, press any key to switch to IDLE\n");
+  } else if (node->getStateArm1() != FX_STATE_IDLE) {
+    printf("Arm1 is not in STATE_IDLE, press any key to switch to IDLE\n");
 
     getchar();
 
     auto responseSwitchToIdle =
-        node->send_StateSwitchToIdle_request(FX_OBJ_ARM0, 1000);
+        node->send_StateSwitchToIdle_request(FX_OBJ_ARM1, 1000);
     if (!responseSwitchToIdle) {
-      // 1. 服务调用失败（超时或服务不可用）
       RCLCPP_ERROR(
           node->get_logger(),
           "StateSwitchToIdle service call failed (timeout or unavailable)");
@@ -2125,7 +2121,7 @@ int main(int argc, char **argv) {
 
     if (responseSwitchToIdle->result != 0) {
       RCLCPP_ERROR(node->get_logger(),
-                   "Failed to switch arm0 to IDLE state, error code: %d",
+                   "Failed to switch arm1 to IDLE state, error code: %d",
                    responseSwitchToIdle->result);
 
       printf("Press any key to exit\n");
@@ -2134,10 +2130,18 @@ int main(int argc, char **argv) {
     }
   }
 
+  printf("Press any key to set RuntimeSetToolKD\n");
+  getchar();
+  RuntimeSetToolKD msgTool;
+  msgTool.thread_id = 1;
+  msgTool.obj_type = FX_OBJ_ARM1;
+  msgTool.k = {0, 0, 30, 0, 0, 0};
+  msgTool.d = {0.6, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  node->publishSetRuntimeToolKD(msgTool);
+
   /* Configure PD cycle time */
   printf("Press any key to set PD command cycle time to %d ms\n",
          pd_cycle_time);
-
   getchar();
 
   auto responsePDCmdCycleTime =
@@ -2159,23 +2163,13 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  // switch to position
   /* Enter PD mode */
-  printf("Press any key to switch arm0 to STATE_PD\n");
-
+  printf("Press any key to switch arm1 to STATE_PD\n");
   getchar();
-  // if (FX_L1_State_SwitchToPDMode(
-  //         FX_OBJ_ARM0,
-  //         2000,
-  //         vel_ratio,
-  //         acc_ratio,
-  //         k,
-  //         d) != FUNC_RET_SUCCESS)
-  // {
-  //     printf("Failed to switch arm0 to STATE_PD\n");
-  //     goto WAIT_EXIT;
-  // }
+
   auto responseSwitchToPDMode = node->send_StateSwitchToPD_request(
-      FX_OBJ_ARM0, 2000, vel_ratio, acc_ratio, k, d);
+      FX_OBJ_ARM1, 2000, vel_ratio, acc_ratio, k, d);
   if (!responseSwitchToPDMode) {
     RCLCPP_ERROR(
         node->get_logger(),
@@ -2194,18 +2188,12 @@ int main(int argc, char **argv) {
   }
 
   /* Move to mechanical home */
-  printf("Press any key to move arm0 to mechanical home\n");
-
+  printf("Press any key to move arm1 to mechanical home\n");
   getchar();
-  // if (FX_L1_Runtime_SetSetJointPosPDCmd(1, FX_OBJ_ARM0, mechanical_home) !=
-  // FUNC_RET_SUCCESS)
-  // {
-  //     printf("Failed to send home position command\n");
-  //     goto WAIT_EXIT;
-  // }
+
   RuntimeSetJointPosPDCmd cmdTmp;
   cmdTmp.header.stamp = node->now();
-  cmdTmp.obj_type = FX_OBJ_ARM0;
+  cmdTmp.obj_type = FX_OBJ_ARM1;
   cmdTmp.thread_id = 1;
   cmdTmp.pos_cmd = mechanical_home;
   node->publishSetJointPosPDCmd(cmdTmp);
@@ -2220,14 +2208,8 @@ int main(int argc, char **argv) {
   statistics_comm_quality_worst = 100;
 
   while (pos_array_count < TRAJ_POINT_NUM) {
-    // if (FX_L1_Runtime_SetSetJointPosPDCmd(1, FX_OBJ_ARM0,
-    // pos_array[pos_array_count]) != FUNC_RET_SUCCESS)
-    // {
-    //     printf("Failed to send trajectory point %d\n", pos_array_count);
-    //     goto WAIT_EXIT;
-    // }
     cmdTmp.header.stamp = node->now();
-    cmdTmp.obj_type = FX_OBJ_ARM0;
+    cmdTmp.obj_type = FX_OBJ_ARM1;
     cmdTmp.thread_id = 1;
     cmdTmp.pos_cmd = pos_array[pos_array_count];
 
@@ -2277,9 +2259,8 @@ int main(int argc, char **argv) {
 
   // switch to position
   printf("Press any key to switch to position state\n");
-
   getchar();
-  // FX_L1_State_StateSwitchToPosition(1, 1000, 5, 5);
+
   auto responseSwitchToPosition =
       node->send_StateSwitchToPosition_request(FX_OBJ_BODY, 1000, 5, 5);
   if (!responseSwitchToPosition) {
@@ -2301,9 +2282,7 @@ int main(int argc, char **argv) {
       node->getRobotRT()->body.body_out.fbk_joint_pos;
   float *src = src_copy.data();
 
-  // 复制前6个float并自动转换为double
   std::copy(src, src + 6, arr.begin());
-  // std::array<double, 7> body = {0.271, -2.396, -2.017, -2.377, 0, -0.038};
 
   arr[4] += 10;
   RuntimeSetJointPosCmd cmdTmp2;
@@ -2330,14 +2309,77 @@ int main(int argc, char **argv) {
   cmdTmp2.pos_cmd = arr;
   node->publishSetJointPosCmd(cmdTmp2);
 
+  //--------------------------------------------------------------------------------------------------------------
+  // 夹爪命令定义（参照 Python 测试脚本）
+  // 左爪  0x01
+  // 友爪  0x02
+  std::array<uint8_t, 64> dataEnable = {0x02, 0x00, 0x00, 0x00, 0xFF, 0xFF,
+                                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
+
+  std::array<uint8_t, 64> dataClose = {0x02, 0x00, 0x00, 0x00, 0x90, 0x61,
+                                       0x7F, 0xF0, 0x18, 0x06, 0x27, 0xFF};
+
+  std::array<uint8_t, 64> dataOpen = {0x02, 0x00, 0x00, 0x00, 0x7F, 0xFF,
+                                      0x7F, 0xF0, 0x18, 0x06, 0x27, 0xFF};
+
+  std::array<uint8_t, 64> dataIdle = {0x02, 0x00, 0x00, 0x00, 0xFF, 0xFF,
+                                      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFD};
+
+  TerminalArm1CanFDSetData msgCanFD1;
+  msgCanFD1.data.fill(0);
+  msgCanFD1.timeout = 1000;
+  std::copy(dataEnable.begin(), dataEnable.end(), msgCanFD1.data.begin());
+  msgCanFD1.data_len = 64;
+
+  printf("Press any key to switch ready to clamp jaw\n");
+  getchar();
+
+  node->publishSetTerminalArm1CanFDData(msgCanFD1);
+
+  TerminalArm1CanFDSetData msgCanFD2;
+  msgCanFD2.timeout = 1000;
+  msgCanFD2.data.fill(0);
+  std::copy(dataClose.begin(), dataClose.end(), msgCanFD2.data.begin());
+  msgCanFD2.data_len = 64;
+
+  TerminalArm1CanFDSetData msgCanFD3;
+  msgCanFD3.timeout = 1000;
+  msgCanFD3.data.fill(0);
+  std::copy(dataOpen.begin(), dataOpen.end(), msgCanFD3.data.begin());
+  msgCanFD3.data_len = 64;
+
+  printf("Press any key to  start clamp jaw !\n");
+  getchar();
+
+  int i = 10;
+  while (i > 0) {
+    node->publishSetTerminalArm1CanFDData(msgCanFD2);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    node->publishSetTerminalArm1CanFDData(msgCanFD3);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    --i;
+  }
+
+  TerminalArm1CanFDSetData msgCanFD4;
+  msgCanFD4.data.fill(0);
+  msgCanFD4.timeout = 1000;
+  std::copy(dataIdle.begin(), dataIdle.end(), msgCanFD4.data.begin());
+  msgCanFD4.data_len = 64;
+
+  printf("Press any key to switch idle to clamp jaw\n");
+  getchar();
+
+  node->publishSetTerminalArm1CanFDData(msgCanFD4);
+
+  //--------------------------------------------------------------------------------------------------------------
   /* Return to IDLE */
   printf("Press any key to switch back to IDLE state\n");
-
   getchar();
-  // FX_L1_State_SwitchToIdle(FX_OBJ_ARM0, 1000);
 
   auto responseSwitchToIdle1 =
-      node->send_StateSwitchToIdle_request(FX_OBJ_ARM0, 1000);
+      node->send_StateSwitchToIdle_request(FX_OBJ_ARM1, 1000);
   if (!responseSwitchToIdle1) {
     RCLCPP_ERROR(
         node->get_logger(),
@@ -2350,7 +2392,7 @@ int main(int argc, char **argv) {
 
   if (responseSwitchToIdle1->result != 0) {
     RCLCPP_ERROR(node->get_logger(),
-                 "Failed to switch arm0 to IDLE state, error code: %d",
+                 "Failed to switch arm1 to IDLE state, error code: %d",
                  responseSwitchToIdle1->result);
     node->send_SystemUnlink_request();
     printf("Press any key to exit\n");

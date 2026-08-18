@@ -30,18 +30,32 @@ class BasicPDUser : public rclcpp::Node {
   rclcpp::Subscription<RobotRT>::SharedPtr subscription0_;
   rclcpp::Subscription<RobotSG>::SharedPtr subscription1_;
   rclcpp::Subscription<FXStateTypeArm0>::SharedPtr subscription2_;
+  rclcpp::Subscription<TerminalArm0CanFDGetData>::SharedPtr subscription3_;
+  rclcpp::Subscription<TerminalArm1CanFDGetData>::SharedPtr subscription4_;
+  rclcpp::Subscription<FXStateTypeArm1>::SharedPtr subscription5_;
 
   rclcpp::Publisher<RuntimeSetJointPosPDCmd>::SharedPtr publisher_;
   rclcpp::Publisher<RuntimeSetJointPosCmd>::SharedPtr publisher1_;
+  rclcpp::Publisher<TerminalArm0CanFDSetData>::SharedPtr publisher2_;
+  rclcpp::Publisher<TerminalArm1CanFDSetData>::SharedPtr publisher3_;
 
-  RobotSG::SharedPtr sg_ptr_ = nullptr;  ///< Status group feedback
-  RobotRT::SharedPtr rt_ptr_ = nullptr;  ///< Real-time feedback
+  rclcpp::Publisher<RuntimeSetToolKD>::SharedPtr publisher4_;
 
   std::atomic<bool> bSystemLinked_{false};
   std::atomic<FXStateType> stateArm0_{FXStateType::FX_STATE_UNKNOWN};
+  std::atomic<FXStateType> stateArm1_{FXStateType::FX_STATE_UNKNOWN};
 
-  std::mutex mtxSG_;
-  std::mutex mtxRT_;
+  mutable std::mutex mtx_rt_;
+  std::shared_ptr<RobotRT> rt_ptr_;
+
+  mutable std::mutex mtx_sg_;
+  std::shared_ptr<RobotSG> sg_ptr_;
+
+  mutable std::mutex mtx_canfd0_;
+  std::shared_ptr<TerminalArm0CanFDGetData> canFDarm0_ptr_;
+
+  mutable std::mutex mtx_canfd1_;
+  std::shared_ptr<TerminalArm1CanFDGetData> canFDarm1_ptr_;
 
   rclcpp::Executor *executor_ = nullptr;
 
@@ -50,14 +64,35 @@ class BasicPDUser : public rclcpp::Node {
 
   void setSystemLinked(bool bLinked) { bSystemLinked_.store(bLinked); }
 
-  std::shared_ptr<const RobotSG> getRobotSG() const { return sg_ptr_; }
-  std::shared_ptr<const RobotRT> getRobotRT() const { return rt_ptr_; }
-
   bool getSystemLinked() const {
     return bSystemLinked_.load(std::memory_order_acquire);
   }
+
   FXStateType getStateArm0() const {
     return stateArm0_.load(std::memory_order_acquire);
+  }
+  FXStateType getStateArm1() const {
+    return stateArm1_.load(std::memory_order_acquire);
+  }
+
+  RobotRT::SharedPtr getRobotRT() const {
+    std::lock_guard<std::mutex> lock(mtx_rt_);
+    return rt_ptr_;
+  }
+
+  RobotSG::SharedPtr getRobotSG() const {
+    std::lock_guard<std::mutex> lock(mtx_sg_);
+    return sg_ptr_;
+  }
+
+  TerminalArm0CanFDGetData::SharedPtr getCanFDarm0Data() const {
+    std::lock_guard<std::mutex> lock(mtx_canfd0_);
+    return canFDarm0_ptr_;
+  }
+
+  TerminalArm1CanFDGetData::SharedPtr getCanFDarm1Data() const {
+    std::lock_guard<std::mutex> lock(mtx_canfd1_);
+    return canFDarm1_ptr_;
   }
 
   //------------------------------------------------------------------------------
@@ -94,6 +129,18 @@ class BasicPDUser : public rclcpp::Node {
     publisher1_->publish(msg);
   }
 
+  void publishSetTerminalArm0CanFDData(const TerminalArm0CanFDSetData &msg) {
+    publisher2_->publish(msg);
+  }
+
+  void publishSetTerminalArm1CanFDData(const TerminalArm1CanFDSetData &msg) {
+    publisher3_->publish(msg);
+  }
+
+  void publishSetRuntimeToolKD(const RuntimeSetToolKD &msg) {
+    publisher4_->publish(msg);
+  }
+
   //------------------------------------------------------------------------------------------
  private:
   void handle_RobotRT_callback(RobotRT::SharedPtr msg);
@@ -101,8 +148,17 @@ class BasicPDUser : public rclcpp::Node {
   void handle_RobotSG_callback(RobotSG::SharedPtr msg);
 
   void handle_StateArm0_callback(FXStateTypeArm0::SharedPtr msg);
+  void handle_StateArm1_callback(FXStateTypeArm1::SharedPtr msg);
+
+  void handle_TerminalArm0CanFDGet_callback(
+      TerminalArm0CanFDGetData::SharedPtr msg);
+  void handle_TerminalArm1CanFDGet_callback(
+      TerminalArm1CanFDGetData::SharedPtr msg);
 
   void setStateArm0(FXStateType newState) {
     stateArm0_.store(newState, std::memory_order_release);  // 释放语义
+  }
+  void setStateArm1(FXStateType newState) {
+    stateArm1_.store(newState, std::memory_order_release);  // 释放语义
   }
 };

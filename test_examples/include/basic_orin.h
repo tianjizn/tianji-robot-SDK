@@ -64,7 +64,11 @@ class BasicOrin : public rclcpp::Node {
  private:
   void timerSGCallback();
   void timerRTCallback();
+
   void timerStateTypeCallback();
+
+  void timerCanFDarm0Callback();
+  void timerCanFDarm1Callback();
 
   // sub_topic------------------------------------------------------------------------------------------
  public:
@@ -99,6 +103,8 @@ class BasicOrin : public rclcpp::Node {
   rclcpp::TimerBase::SharedPtr timerSG_;
   rclcpp::TimerBase::SharedPtr timerRT_;
   rclcpp::TimerBase::SharedPtr timerStateType_;
+  rclcpp::TimerBase::SharedPtr timerCanFDarm0_;
+  rclcpp::TimerBase::SharedPtr timerCanFDarm1_;
 
   std::mutex mtxSG_;
   std::mutex mtxRT_;

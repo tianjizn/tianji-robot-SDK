@@ -14,7 +14,7 @@ BasicPDUser::BasicPDUser() : Node("basic_pd_user") {
   client7_ = this->create_client<StateSwitchToPD>("state_switch_to_pd");
   client8_ =
       this->create_client<StateSwitchToPosition>("state_switch_to_position");
-
+  //---------------------------------------------------------------------------------------
   subscription0_ = this->create_subscription<RobotRT>(
       "/robot/robot_rt", 500,
       std::bind(&BasicPDUser::handle_RobotRT_callback, this,
@@ -30,11 +30,35 @@ BasicPDUser::BasicPDUser() : Node("basic_pd_user") {
       std::bind(&BasicPDUser::handle_StateArm0_callback, this,
                 std::placeholders::_1));
 
+  subscription3_ = this->create_subscription<TerminalArm0CanFDGetData>(
+      "/robot/terminal_arm0_can_fd_get_data", 100,
+      std::bind(&BasicPDUser::handle_TerminalArm0CanFDGet_callback, this,
+                std::placeholders::_1));
+
+  subscription4_ = this->create_subscription<TerminalArm1CanFDGetData>(
+      "/robot/terminal_arm1_can_fd_get_data", 100,
+      std::bind(&BasicPDUser::handle_TerminalArm1CanFDGet_callback, this,
+                std::placeholders::_1));
+  subscription5_ = this->create_subscription<FXStateTypeArm1>(
+      "/robot/state_type_arm1", 100,
+      std::bind(&BasicPDUser::handle_StateArm1_callback, this,
+                std::placeholders::_1));
+  //---------------------------------------------------------------------------------------
   publisher_ = this->create_publisher<RuntimeSetJointPosPDCmd>(
       "/robot/runtime_set_joint_pos_pd_cmd", 100);
 
   publisher1_ = this->create_publisher<RuntimeSetJointPosCmd>(
       "/robot/runtime_set_joint_pos_cmd", 100);
+
+  publisher2_ = this->create_publisher<TerminalArm0CanFDSetData>(
+      "/robot/terminal_arm0_can_fd_set_data", 100);
+
+  publisher3_ = this->create_publisher<TerminalArm1CanFDSetData>(
+      "/robot/terminal_arm1_can_fd_set_data", 100);
+
+  publisher4_ = this->create_publisher<RuntimeSetToolKD>(
+      "/robot/runtime_set_tool_kd", 10);
+
   RCLCPP_INFO(this->get_logger(), "BasicPD User ready!");
   // timer_ = this->create_wall_timer(
   //     std::chrono::milliseconds(10),
@@ -392,33 +416,17 @@ BasicPDUser::send_StateSwitchToPosition_request(uint8_t obj_type,
 
 //----------------------------------------------------------------------------------------
 void BasicPDUser::handle_RobotRT_callback(RobotRT::SharedPtr msg) {
-  // static int i = 0;
-  if (!msg) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(mtxRT_);
-  if (!rt_ptr_) {
-    rt_ptr_ = std::make_unique<RobotRT>(*msg);
-  } else {
-    std::swap(rt_ptr_, msg);
-  }
-  // printf("Get Topic RobotRT %d!\n", i++);
-  printf("Get Topic RobotRT !\n");
+  std::lock_guard<std::mutex> lock(mtx_rt_);
+  rt_ptr_ = std::move(msg);
+
+  // printf("Get Topic RobotRT !\n");
 }
 
 void BasicPDUser::handle_RobotSG_callback(RobotSG::SharedPtr msg) {
-  // static int j = 0;
-  if (!msg) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(mtxSG_);
-  if (!sg_ptr_) {
-    sg_ptr_ = std::make_unique<RobotSG>(*msg);
-  } else {
-    std::swap(sg_ptr_, msg);
-  }
+  std::lock_guard<std::mutex> lock(mtx_sg_);
+  sg_ptr_ = std::move(msg);
   // printf("Get Topic RobotSG %d!\n", j++);
-  printf("Get Topic RobotSG !\n");
+  // printf("Get Topic RobotSG !\n");
 }
 
 void BasicPDUser::handle_StateArm0_callback(FXStateTypeArm0::SharedPtr msg) {
@@ -428,5 +436,31 @@ void BasicPDUser::handle_StateArm0_callback(FXStateTypeArm0::SharedPtr msg) {
 
   setStateArm0(static_cast<FXStateType>(msg->state_type));
 
-  printf("Get Topic StateArm0 %d!\n", getStateArm0());
+  // printf("Get Topic StateArm0 %d!\n", getStateArm0());
+}
+
+void BasicPDUser::handle_StateArm1_callback(FXStateTypeArm1::SharedPtr msg) {
+  if (!msg) {
+    return;
+  }
+
+  setStateArm1(static_cast<FXStateType>(msg->state_type));
+
+  // printf("Get Topic StateArm1 %d!\n", getStateArm1());
+}
+
+void BasicPDUser::handle_TerminalArm0CanFDGet_callback(
+    TerminalArm0CanFDGetData::SharedPtr msg) {
+  std::lock_guard<std::mutex> lock(mtx_canfd0_);
+  canFDarm0_ptr_ = std::move(msg);
+
+  // printf("Get Topic TerminalArm0CanFDGetData !\n");
+}
+
+void BasicPDUser::handle_TerminalArm1CanFDGet_callback(
+    TerminalArm1CanFDGetData::SharedPtr msg) {
+  std::lock_guard<std::mutex> lock(mtx_canfd1_);
+  canFDarm1_ptr_ = std::move(msg);
+
+  // printf("Get Topic TerminalArm1CanFDGetData !\n");
 }
