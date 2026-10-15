@@ -203,6 +203,28 @@ extern "C"
    */
   CONTROL_SDK_API int FX_L0_System_GetSystemIP(char ip_str[20]);
 
+   /**
+   * @brief Set the robot serial number.
+   *
+   * @param[in] serial  Null-terminated string containing the serial number.
+   *                    Maximum length is 29 characters (plus null terminator)
+   *                    to fit within the 30-byte buffer.
+   *
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_SetSN(char serial[30]);
+
+  /**
+   * @brief Retrieve the robot serial number.
+   *
+   * @param[out] serial  Buffer to receive the null-terminated serial number string.
+   *                     Must be at least 30 bytes in size to accommodate up to
+   *                     29 characters plus the null terminator.
+   *
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_GetSN(char serial[30]);
+  
   /* =========================================================
    * Parameter Management APIs
    * ========================================================= */

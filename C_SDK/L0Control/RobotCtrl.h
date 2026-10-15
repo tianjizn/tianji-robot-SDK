@@ -45,6 +45,8 @@ public:
     static FX_BOOL System_GetSystemTime(FX_CHAR time_str[20]);
     static FX_BOOL System_SetSystemIP(FX_INT32 ip[4]);
     static FX_BOOL System_GetSystemIP(FX_CHAR ip_str[20]);
+	static FX_BOOL System_SetSN(char serial_number[30]);
+    static FX_BOOL System_GetSN(char serial_number[30]);
 
 	/*//////////////////////////////////////////////////////////////////////////////////////
 	通道数据接口:对双臂末端板的通信接口进行透传处理的接口

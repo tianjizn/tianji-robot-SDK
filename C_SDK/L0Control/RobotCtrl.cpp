@@ -562,6 +562,55 @@ FX_BOOL RobotCtrl::System_GetSystemIP(FX_CHAR ip_str[20])
 	return FX_TRUE;
 }
 
+FX_BOOL RobotCtrl::System_SetSN(char serial_number[30])
+{
+	RobotCtrl *ins = RobotCtrl::GetIns();
+
+	ins->m_ParaSerial++;
+	if (ins->m_ParaSerial >= 99)
+	{
+		ins->m_ParaSerial = 1;
+	}
+	FX_INT32 serial = ins->m_ParaSerial;
+	OP_SET buf;
+	memset(&buf, 0, sizeof(OP_SET));
+	buf.m_OpCmdSerial = serial;
+	buf.m_OpIns = OPINS_SYSTEM_SET_SN;
+    memcpy(buf.m_OpValueS, serial_number, 30);
+	if (!SetRawData(FX_DEFAULT_THREAD_ID, UDP_OPERATION, 44, (FX_UCHAR *)&buf))
+	{
+		return FX_FALSE;
+	}
+	return ins->WaitOpReturn(serial, 1000);
+}
+
+FX_BOOL RobotCtrl::System_GetSN(char serial_number[30])
+{
+	RobotCtrl *ins = RobotCtrl::GetIns();
+
+	ins->m_ParaSerial++;
+	if (ins->m_ParaSerial >= 99)
+	{
+		ins->m_ParaSerial = 1;
+	}
+	FX_INT32 serial = ins->m_ParaSerial;
+	OP_SET buf;
+	memset(&buf, 0, sizeof(OP_SET));
+	buf.m_OpCmdSerial = serial;
+	buf.m_OpIns = OPINS_SYSTEM_GET_SN;
+	if (!SetRawData(FX_DEFAULT_THREAD_ID, UDP_OPERATION, 44, (FX_UCHAR *)&buf))
+	{
+		return FX_FALSE;
+	}
+	if (!ins->WaitOpReturn(serial, 1000))
+	{
+		return FX_FALSE;
+	}
+	strncpy(serial_number, ins->m_RobotSG.m_OP_SET.m_OpValueS, 29);
+	serial_number[29] = 0;
+	return FX_TRUE;
+}
+
 ////////////////////////
 FX_BOOL RobotCtrl::Para_GetInt(FX_CHAR name[30], FX_INT32 *ret_value)
 {

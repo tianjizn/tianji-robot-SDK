@@ -487,6 +487,11 @@ unsigned int FX_L1_System_GetLogLevel()
 int FX_L1_System_GetControllerVersion()
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }    
     int version = FX_L0_System_GetControllerVersion();
     if (version < 0)
     {
@@ -570,6 +575,11 @@ int FX_L1_System_Reboot()
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_System_Reboot() != 0)
     {
         _FX_ERRO("%s: Failed to reboot controller", __FUNCTION__);
@@ -581,6 +591,9 @@ int FX_L1_System_Reboot()
 
 int FX_L1_System_Update(char *update_file_path, char *ini_file_path)
 {
+    _FX_INFO("%s: update_file_path=%s, ini_file_path=%s", __FUNCTION__,
+             update_file_path ? update_file_path : "NULL",
+             ini_file_path ? ini_file_path : "NULL");
     if (update_file_path == NULL && ini_file_path == NULL)
     {
         _FX_ERRO("%s: Update file path and ini file path are all invalid", __FUNCTION__);
@@ -599,10 +612,15 @@ int FX_L1_System_Update(char *update_file_path, char *ini_file_path)
         if (FX_L1_System_SendFile(ini_file_path, (char *)"/home/FUSION/Tmp/robot.ini.UPDATE") != 0)
         {
             _FX_ERRO("%s: Failed to transfer ini file to the controller", __FUNCTION__);
-            return FUNC_RET_RECV_FILE_FAILED;
+            return FUNC_RET_SEND_FILE_FAILED;
         }
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_System_Update() != 0)
     {
         _FX_ERRO("%s: Failed to set controller update flag", __FUNCTION__);
@@ -644,6 +662,12 @@ int FX_L1_System_RecvFile(char *local_file_path, char *remote_file_path)
 
 int FX_L1_System_SetSystemTime(int year, int month, int day, int hour, int minute, int second)
 {
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if(FX_L0_System_SetSystemTime(year, month, day, hour, minute, second) == 0)
     {
         return FUNC_RET_SUCCESS;
@@ -656,6 +680,12 @@ int FX_L1_System_SetSystemTime(int year, int month, int day, int hour, int minut
 
 int FX_L1_System_GetSystemTime(char time_str[20])
 {
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if(FX_L0_System_GetSystemTime(time_str) == 0)
     {
         return FUNC_RET_SUCCESS;
@@ -668,6 +698,12 @@ int FX_L1_System_GetSystemTime(char time_str[20])
 
 int FX_L1_System_SetSystemIP(int ip[4])
 {
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if(FX_L0_System_SetSystemIP(ip) == 0)
     {
         return FUNC_RET_SUCCESS;
@@ -680,6 +716,12 @@ int FX_L1_System_SetSystemIP(int ip[4])
 
 int FX_L1_System_GetSystemIP(char ip_str[20])
 {
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if(FX_L0_System_GetSystemIP(ip_str) == 0)
     {
         return FUNC_RET_SUCCESS;
@@ -689,6 +731,53 @@ int FX_L1_System_GetSystemIP(char ip_str[20])
         return FUNC_RET_OPERATION_FAILED;
     }
 }
+
+int FX_L1_System_SetSN(char serial[30])
+{
+    if (serial == NULL || strlen(serial) > 29)
+    {
+        _FX_ERRO("%s: serial is not valid", __FUNCTION__);
+        return FUNC_RET_INVALID_INPUT_ARG;
+    }
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+    if (FX_L0_System_SetSN(serial) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
+int FX_L1_System_GetSN(char serial[30])
+{
+    if (serial == NULL)
+    {
+        _FX_ERRO("%s: serial can not be NULL", __FUNCTION__);
+        return FUNC_RET_INVALID_INPUT_ARG;
+    }
+    std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+    if (FX_L0_System_GetSN(serial) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
 
 int FX_L1_Fbk_GetCtrlObjDof(FXObjType obj_type)
 {
@@ -840,6 +929,11 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char firmware_version[7
 int FX_L1_Fbk_GetCtrlObjSensorVersionAndSerial(FXObjType obj_type, int version[7], int serial[7])
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -942,6 +1036,11 @@ int FX_L1_Fbk_GetCtrlObjSensorVersionAndSerial(FXObjType obj_type, int version[7
 int FX_L1_Fbk_GetCtrlObjPhysicalState(FXObjType obj_type, int *physical_state)
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -1337,6 +1436,11 @@ int FX_L1_Fbk_CheckUserDataSet(int user_data_len)
 
 int FX_L1_Fbk_ResetSystemMsg()
 {
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if(FX_L0_ResetSystemMsg() == 0)
     {
         return FUNC_RET_SUCCESS;
@@ -1355,6 +1459,11 @@ int FX_L1_Fbk_GetSystemMsg(char* msg, int max_msg_len)
 int FX_L1_State_GetServoErrorCode(FXObjType obj_type, unsigned int error_code[7])
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -1935,6 +2044,12 @@ int FX_L1_State_SwitchToImpJointMode(FXObjType obj_type, unsigned int timeout, d
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -2129,7 +2244,11 @@ int FX_L1_State_SwitchToImpCartMode(FXObjType obj_type, unsigned int timeout, do
             d[i] = 0;
         }
     }
-
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -2315,6 +2434,12 @@ int FX_L1_State_SwitchToImpForceMode(FXObjType obj_type, unsigned int timeout, d
         torque_ctrl[FX_TORQUE_ANGLE] = 0;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -2476,6 +2601,12 @@ FX_L1_SDK_API int FX_L1_State_SwitchToPDMode(FXObjType obj_type, unsigned int ti
         {
             d[i] = 0;
         }
+    }
+
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
     }
 
     FXStateType cur_state = FX_STATE_UNKNOWN;
@@ -2697,6 +2828,12 @@ int FX_L1_State_SwitchToDragJoint(FXObjType obj_type, unsigned int timeout, doub
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -2840,6 +2977,12 @@ int FX_L1_State_SwitchToDragCartX(FXObjType obj_type, unsigned int timeout, doub
         {
             d[i] = 0;
         }
+    }
+
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
     }
 
     FXStateType cur_state = FX_STATE_UNKNOWN;
@@ -2987,6 +3130,12 @@ int FX_L1_State_SwitchToDragCartY(FXObjType obj_type, unsigned int timeout, doub
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -3130,6 +3279,12 @@ int FX_L1_State_SwitchToDragCartZ(FXObjType obj_type, unsigned int timeout, doub
         {
             d[i] = 0;
         }
+    }
+
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
     }
 
     FXStateType cur_state = FX_STATE_UNKNOWN;
@@ -3277,6 +3432,11 @@ int FX_L1_State_SwitchToDragCartR(FXObjType obj_type, unsigned int timeout, doub
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -3410,6 +3570,12 @@ int FX_L1_State_SwitchToCollaborativeRelease(FXObjType obj_type, unsigned int ti
         return FUNC_RET_INVALID_ROBOT_TYPE;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
+
     FXStateType cur_state = FX_STATE_UNKNOWN;
     cur_state = FX_L1_Fbk_CurrentState(obj_type);
     switch (cur_state)
@@ -3513,6 +3679,11 @@ int FX_L1_Param_SetInt32(char *name, int value)
         return FUNC_RET_INVALID_INPUT_ARG;
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Param_SetInt(name, value) != 0)
     {
         _FX_ERRO("%s: Failed to set %s=%d", __FUNCTION__, name, value);
@@ -3535,6 +3706,11 @@ int FX_L1_Param_SetFloat(char *name, float value)
         return FUNC_RET_INVALID_INPUT_ARG;
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Param_SetFloat(name, value) != 0)
     {
         _FX_ERRO("%s: Failed to set %s=%.4f", __FUNCTION__, name, value);
@@ -3557,6 +3733,11 @@ int FX_L1_Param_GetInt32(char *name, int *value)
         return FUNC_RET_INVALID_INPUT_ARG;
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Param_GetInt(name, value) != 0)
     {
         _FX_ERRO("%s: Failed to get %s", __FUNCTION__, name);
@@ -3574,6 +3755,11 @@ int FX_L1_Param_GetFloat(char *name, float *value)
         return FUNC_RET_INVALID_INPUT_ARG;
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Param_GetFloat(name, value) != 0)
     {
         _FX_ERRO("%s: Failed to get %s", __FUNCTION__, name);
@@ -3591,6 +3777,11 @@ int FX_L1_Param_GetString(char *name, char *value)
         return FUNC_RET_INVALID_INPUT_ARG;
     }
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Param_GetString(name, value) != 0)
     {
         _FX_ERRO("%s: Failed to get %s", __FUNCTION__, name);
@@ -3756,6 +3947,11 @@ int FX_L1_Config_SetBrakeLock(FXObjType obj_type, unsigned char axis_mask)
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -3843,6 +4039,11 @@ int FX_L1_Config_SetBrakeUnlock(FXObjType obj_type, unsigned char axis_mask)
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -3929,6 +4130,11 @@ int FX_L1_Config_ResetEncOffset(FXObjType obj_type, unsigned char axis_mask)
         return FUNC_RET_INVALID_ROBOT_TYPE;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4087,6 +4293,11 @@ int FX_L1_Config_ClearEncError(FXObjType obj_type, unsigned char axis_mask)
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4179,6 +4390,11 @@ int FX_L1_Config_ResetAxisSensorOffset(FXObjType obj_type, unsigned int axis_id)
     char SensorDir_name[30] = {0};
     float sensor_value = 0;
     const ROBOT_RT *rt = FX_L0_GetRobotRT();
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4326,6 +4542,11 @@ int FX_L1_Config_ResetSensorOffset(FXObjType obj_type)
     float sensor_value[8] = {0};
     int dof = 0;
     const ROBOT_RT *rt = FX_L0_GetRobotRT();
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4470,6 +4691,11 @@ int FX_L1_Config_DisableSoftLimit(FXObjType obj_type, unsigned char axis_mask)
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4817,6 +5043,11 @@ int FX_L1_Config_SetPDCmdCycleTime(int cycle_time)
     }
 
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_System_SetPDCmdCycleTime(cycle_time_actual) == 0)
     {
         _FX_INFO("%s: Set PD command cycle time to be %dms success", __FUNCTION__, cycle_time_actual);
@@ -4832,6 +5063,11 @@ int FX_L1_Config_SetPDCmdCycleTime(int cycle_time)
 int FX_L1_Config_GetPDCmdCycleTime(int *cycle_time)
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_System_GetPDCmdCycleTime(cycle_time) == 0)
     {
         _FX_INFO("%s: PD command cycle time is %dms", __FUNCTION__, *cycle_time);
@@ -4964,6 +5200,11 @@ int FX_L1_Runtime_SetJointPosCmd(unsigned int thread_id, FXObjType obj_type, dou
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5020,7 +5261,7 @@ int FX_L1_Runtime_SetJointPosCmd(unsigned int thread_id, FXObjType obj_type, dou
     return FUNC_RET_SUCCESS;
 }
 
-FX_L1_SDK_API int FX_L1_Runtime_SetJointPosPDCmd(unsigned int thread_id, FXObjType obj_type, double pos_cmd[7])
+int FX_L1_Runtime_SetJointPosPDCmd(unsigned int thread_id, FXObjType obj_type, double pos_cmd[7])
 {
     static int arm0_cmd_serial = 7;
     static int arm1_cmd_serial = 7;
@@ -5032,6 +5273,11 @@ FX_L1_SDK_API int FX_L1_Runtime_SetJointPosPDCmd(unsigned int thread_id, FXObjTy
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5104,6 +5350,11 @@ int FX_L1_Runtime_SetForceCtrl(unsigned int thread_id, FXObjType obj_type, doubl
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5141,6 +5392,11 @@ int FX_L1_Runtime_SetTorqueCtrl(unsigned int thread_id, FXObjType obj_type, doub
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5187,6 +5443,11 @@ int FX_L1_Runtime_SetVelRatio(unsigned int thread_id, FXObjType obj_type, double
         vel_ratio = 100;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5260,6 +5521,11 @@ int FX_L1_Runtime_SetAccRatio(unsigned int thread_id, FXObjType obj_type, double
         acc_ratio = 100;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5342,6 +5608,11 @@ int FX_L1_Runtime_SetSpeedRatio(unsigned int thread_id, FXObjType obj_type, doub
         acc_ratio = 100;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5414,6 +5685,11 @@ int FX_L1_Runtime_SetJointK(unsigned int thread_id, FXObjType obj_type, double k
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5459,6 +5735,11 @@ int FX_L1_Runtime_SetJointD(unsigned int thread_id, FXObjType obj_type, double d
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5508,6 +5789,11 @@ int FX_L1_Runtime_SetJointKD(unsigned int thread_id, FXObjType obj_type, double 
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5552,7 +5838,11 @@ int FX_L1_Runtime_SetCartK(unsigned int thread_id, FXObjType obj_type, double k[
             k[i] = 0;
         }
     }
-
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5598,6 +5888,11 @@ int FX_L1_Runtime_SetCartD(unsigned int thread_id, FXObjType obj_type, double d[
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5647,6 +5942,11 @@ int FX_L1_Runtime_SetCartKD(unsigned int thread_id, FXObjType obj_type, double k
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5684,6 +5984,11 @@ int FX_L1_Runtime_SetToolK(unsigned int thread_id, FXObjType obj_type, double k[
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5721,6 +6026,11 @@ int FX_L1_Runtime_SetToolD(unsigned int thread_id, FXObjType obj_type, double d[
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5758,6 +6068,11 @@ int FX_L1_Runtime_SetToolKD(unsigned int thread_id, FXObjType obj_type, double k
         return FUNC_RET_INVALID_THREAD_ID;
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -5803,6 +6118,11 @@ int FX_L1_Runtime_SetBodyPDP(unsigned int thread_id, double p[6])
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Body_Runtime_SetPDP(thread_id, p) != 0)
     {
         _FX_WARN("[Thread%u]%s: Body format command failed", thread_id, __FUNCTION__);
@@ -5827,6 +6147,11 @@ int FX_L1_Runtime_SetBodyPDD(unsigned int thread_id, double d[6])
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Body_Runtime_SetPDD(thread_id, d) != 0)
     {
         _FX_WARN("[Thread%u]%s: Body format command failed", thread_id, __FUNCTION__);
@@ -5855,6 +6180,11 @@ int FX_L1_Runtime_SetBodyPD(unsigned int thread_id, double p[6], double d[6])
         }
     }
 
+    if (FX_L0_System_GetLinkState() != 1)
+    {
+        _FX_ERRO("%s: Link is not connected, reject operation", __FUNCTION__);
+        return FUNC_RET_LINK_LOST;
+    }
     if (FX_L0_Body_Runtime_SetPDP(thread_id, p) != 0 || FX_L0_Body_Runtime_SetPDD(thread_id, d) != 0)
     {
         _FX_WARN("[Thread%u]%s: Body format command failed", thread_id, __FUNCTION__);

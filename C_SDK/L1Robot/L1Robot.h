@@ -79,7 +79,7 @@ extern "C"
      *
      * @return void
      */
-    FX_L1_SDK_API void FX_L1_System_Unlink();
+    FX_L1_SDK_API void FX_L1_System_Unlink(void);
     /**
      * @brief Retrieve the current communication link state of the system.
      *
@@ -95,7 +95,7 @@ extern "C"
      * @note The returned value represents the most recently known link status
      *       and may not reflect real-time link fluctuations.
      */
-    FX_L1_SDK_API int FX_L1_System_GetLinkState();
+    FX_L1_SDK_API int FX_L1_System_GetLinkState(void);
     /**
      * @brief Set the global log level for L1 APIs.
      *
@@ -114,7 +114,7 @@ extern "C"
      *
      * @return Currently configured log level.
      */
-    FX_L1_SDK_API unsigned int FX_L1_System_GetLogLevel();
+    FX_L1_SDK_API unsigned int FX_L1_System_GetLogLevel(void);
 
     /**
      * @brief Query the controller firmware version.
@@ -125,7 +125,7 @@ extern "C"
      *
      * @see FX_L1_System_GetSDKVersion
      */
-    FX_L1_SDK_API int FX_L1_System_GetControllerVersion();
+    FX_L1_SDK_API int FX_L1_System_GetControllerVersion(void);
 
     /**
      * @brief Query the SDK version.
@@ -134,7 +134,7 @@ extern "C"
      *
      * @return Encoded SDK version value, or FUNC_RET_OPERATION_FAILED if unavailable.
      */
-    FX_L1_SDK_API int FX_L1_System_GetSDKVersion();
+    FX_L1_SDK_API int FX_L1_System_GetSDKVersion(void);
 
     /**
      * @brief Reboot the robot system.
@@ -145,7 +145,7 @@ extern "C"
      *
      * @see FXFuncReturn
      */
-    FX_L1_SDK_API int FX_L1_System_Reboot();
+    FX_L1_SDK_API int FX_L1_System_Reboot(void);
 
     /**
      * @brief Perform a system update using specified files.
@@ -243,6 +243,31 @@ extern "C"
      * @see FXFuncReturn
      */
     FX_L1_SDK_API int FX_L1_System_GetSystemIP(char ip_str[20]);
+
+ /**
+     * @brief Set the robot serial number.
+     *
+     * @param[in] serial  Null-terminated string containing the serial number.
+     *                    Maximum length is 29 characters (plus null terminator)
+     *                    to fit within the 30-byte buffer.
+     *
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_SetSN(char serial[30]);
+    /**
+     * @brief Retrieve the robot serial number.
+     *
+     * @param[out] serial  Buffer to receive the null-terminated serial number string.
+     *                     Must be at least 30 bytes in size to accommodate up to
+     *                     29 characters plus the null terminator.
+     *
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_GetSN(char serial[30]);
     
     /* =========================================================
      * Feedback APIs
@@ -301,7 +326,7 @@ extern "C"
      *
      * @see FXRobotType
      */
-    FX_L1_SDK_API FXRobotType FX_L1_Fbk_GetRobotType();
+    FX_L1_SDK_API FXRobotType FX_L1_Fbk_GetRobotType(void);
 
     /**
      * @brief Query the current high-level state of a control object.
@@ -320,7 +345,7 @@ extern "C"
      *
      * @return Pointer to ROBOT_RT data.
      */
-    FX_L1_SDK_API const ROBOT_RT *FX_L1_Fbk_GetRT();
+    FX_L1_SDK_API const ROBOT_RT *FX_L1_Fbk_GetRT(void);
 
     /**
      * @brief Access slow-group feedback data.
@@ -329,7 +354,7 @@ extern "C"
      *
      * @return Pointer to ROBOT_SG data.
      */
-    FX_L1_SDK_API const ROBOT_SG *FX_L1_Fbk_GetSG();
+    FX_L1_SDK_API const ROBOT_SG *FX_L1_Fbk_GetSG(void);
 
     /**
      * @brief Sample the user data from feedback.
@@ -345,7 +370,7 @@ extern "C"
      *
      * @note This function clears all previously registered user data sets.
      */
-    FX_L1_SDK_API void FX_L1_Fbk_ResetUserDataSet();
+    FX_L1_SDK_API void FX_L1_Fbk_ResetUserDataSet(void);
     
     /**
      * @brief Register a user data set for feedback.
@@ -382,7 +407,7 @@ extern "C"
      *
      * @see FXFuncReturn
      */
-    FX_L1_SDK_API int FX_L1_Fbk_ResetSystemMsg();
+    FX_L1_SDK_API int FX_L1_Fbk_ResetSystemMsg(void);
     /**
      * @brief Retrieve the current system message.
      *

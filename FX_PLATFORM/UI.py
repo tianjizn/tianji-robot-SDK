@@ -3277,7 +3277,7 @@ class App:
         menu.add_separator()
         menu.add_command(label="System Upgrade", command=self.system_update_dialog)
         menu.add_separator()
-        menu.add_command(label="Config IP",command=self.config_ip_dialog)
+        menu.add_command(label="Robot Settings",command=self.config_settings_dialog)
         # menu.add_separator()
         # menu.add_command(label="Docs", )#command=self.open_doc()
         try:
@@ -5903,18 +5903,87 @@ class App:
                 return
         except Exception as e:
             messagebox.showerror('Error', f"Brake lock failed: {e}")
-    def config_ip_dialog(self):
+
+    def config_settings_dialog(self):
         # if not self.connected:
         #     messagebox.showerror('Error', "Please connect robot first!")
         #     return
 
         config_ip_window = tk.Toplevel(self.root)
-        config_ip_window.title("Config IP Address")
-        config_ip_window.geometry("500x280")
+        config_ip_window.title("Robot Settings")
+        config_ip_window.geometry("500x700")
         config_ip_window.configure(bg="white")
         config_ip_window.transient(self.root)
         config_ip_window.resizable(False, False)
         config_ip_window.grab_set()
+
+        # ==================== Robot Serial Number ====================
+        sn_title_frame = tk.Frame(config_ip_window, bg="white")
+        sn_title_frame.pack(fill="x", padx=5, pady=(15, 5))
+        tk.Label(sn_title_frame, text="Robot Serial Number", bg="#2196F3",
+                 fg="white", font=("Arial", 10, "bold")).pack(fill='x')
+
+        # Current SN
+        cur_sn_frame = tk.Frame(config_ip_window, bg="white")
+        cur_sn_frame.pack(fill="x", padx=20, pady=(8, 4))
+        tk.Label(cur_sn_frame, text="Current SN:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        cur_sn_label = tk.Label(cur_sn_frame, text="", bg="white", fg="#2196F3",
+                                 font=("Arial", 10, "bold"), anchor='w')
+        cur_sn_label.pack(side="left", fill="x", expand=True, padx=5)
+
+        def refresh_sn():
+            try:
+                ret, sn = robot.get_system_sn()
+                if ret == 0 and sn:
+                    cur_sn_label.config(text=sn)
+                else:
+                    cur_sn_label.config(text="Failed to get SN")
+            except Exception as e:
+                cur_sn_label.config(text=f"Error: {e}")
+
+        refresh_sn()
+        tk.Button(cur_sn_frame, text="Refresh", width=8,
+                  font=("Arial", 9), command=refresh_sn).pack(side="left", padx=5)
+
+        # New SN entry
+        new_sn_frame = tk.Frame(config_ip_window, bg="white")
+        new_sn_frame.pack(fill="x", padx=20, pady=(8, 4))
+        tk.Label(new_sn_frame, text="New SN:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        new_sn_var = tk.StringVar()
+        tk.Entry(new_sn_frame, textvariable=new_sn_var, width=30,
+                 font=("Arial", 10)).pack(side="left", padx=5)
+        tk.Label(new_sn_frame, text="max 29 chars", bg="white",
+                 fg="gray", font=("Arial", 8)).pack(side="left")
+
+        def apply_new_sn():
+            sn_str = new_sn_var.get().strip()
+            if not sn_str:
+                messagebox.showerror("Error", "Please enter a new serial number!")
+                return
+            if len(sn_str) > 29:
+                messagebox.showerror("Error", "Serial number must be at most 29 characters!")
+                return
+            if not messagebox.askyesno("Confirm", f"Set robot SN to '{sn_str}'?"):
+                return
+            try:
+                ret = robot.set_system_sn(sn_str)
+                if ret == 0:
+                    messagebox.showinfo("Success", f"Serial number set to '{sn_str}'.")
+                    new_sn_var.set("")
+                    refresh_sn()
+                else:
+                    messagebox.showerror("Failed",
+                                         f"Failed to set SN.\nError: {robot._get_operate_error_msg(ret)}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to set SN: {e}")
+
+        sn_btn_frame = tk.Frame(config_ip_window, bg="white")
+        sn_btn_frame.pack(pady=(4, 10))
+        tk.Button(sn_btn_frame, text="Set SN", width=12,
+                  font=("Arial", 10, "bold"), bg="#4CAF50", fg="white",
+                  command=apply_new_sn).pack(side="left", padx=10)
 
         # ---------- Title ----------
         title_frame = tk.Frame(config_ip_window, bg="white")
@@ -6007,6 +6076,134 @@ class App:
         tk.Button(btn_frame, text="Cancel", width=12,
                   font=("Arial", 11), bg="#9E9E9E", fg="white",
                   command=config_ip_window.destroy).pack(side="left", padx=10)
+
+        # ==================== System Time ====================
+        time_title_frame = tk.Frame(config_ip_window, bg="white")
+        time_title_frame.pack(fill="x", padx=5, pady=(10, 5))
+        tk.Label(time_title_frame, text="System Time", bg="#2196F3",
+                 fg="white", font=("Arial", 10, "bold")).pack(fill='x')
+
+        # Current robot time
+        cur_time_frame = tk.Frame(config_ip_window, bg="white")
+        cur_time_frame.pack(fill="x", padx=20, pady=(8, 4))
+        tk.Label(cur_time_frame, text="Robot time:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        cur_time_label = tk.Label(cur_time_frame, text="", bg="white", fg="#2196F3",
+                                   font=("Arial", 10, "bold"), anchor='w')
+        cur_time_label.pack(side="left", fill="x", expand=True, padx=5)
+
+        def refresh_robot_time():
+            try:
+                ret, t = robot.get_system_time()
+                if ret == 0 and t:
+                    cur_time_label.config(text=t)
+                else:
+                    cur_time_label.config(text="Failed to get time")
+            except Exception as e:
+                cur_time_label.config(text=f"Error: {e}")
+
+        refresh_robot_time()
+        tk.Button(cur_time_frame, text="Refresh", width=8,
+                  font=("Arial", 9), command=refresh_robot_time).pack(side="left", padx=5)
+
+        # New time entry (pre-filled with local PC time)
+        new_time_frame = tk.Frame(config_ip_window, bg="white")
+        new_time_frame.pack(fill="x", padx=20, pady=(8, 4))
+
+        def _local_time_tuple():
+            lt = time.localtime()
+            return (f"{lt.tm_year:04d}", f"{lt.tm_mon:02d}", f"{lt.tm_mday:02d}",
+                    f"{lt.tm_hour:02d}", f"{lt.tm_min:02d}", f"{lt.tm_sec:02d}")
+
+        lt = _local_time_tuple()
+        year_var  = tk.StringVar(value=lt[0])
+        month_var = tk.StringVar(value=lt[1])
+        day_var   = tk.StringVar(value=lt[2])
+        hour_var  = tk.StringVar(value=lt[3])
+        min_var   = tk.StringVar(value=lt[4])
+        sec_var   = tk.StringVar(value=lt[5])
+
+        tk.Label(new_time_frame, text="New time:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        for var, w in ((year_var, 5), (month_var, 3), (day_var, 3),
+                       (hour_var, 3), (min_var, 3), (sec_var, 3)):
+            tk.Entry(new_time_frame, textvariable=var, width=w,
+                     font=("Arial", 10), justify="center").pack(side="left", padx=1)
+        tk.Label(new_time_frame, text="Y-M-D H:M:S", bg="white",
+                 fg="gray", font=("Arial", 8)).pack(side="left", padx=5)
+
+        # Sync-from-PC + Set buttons
+        time_btn_frame = tk.Frame(config_ip_window, bg="white")
+        time_btn_frame.pack(pady=(4, 10))
+
+        def sync_from_pc():
+            lt2 = _local_time_tuple()
+            year_var.set(lt2[0]); month_var.set(lt2[1]); day_var.set(lt2[2])
+            hour_var.set(lt2[3]); min_var.set(lt2[4]); sec_var.set(lt2[5])
+
+        def apply_new_time():
+            try:
+                y = int(year_var.get()); mo = int(month_var.get()); d = int(day_var.get())
+                h = int(hour_var.get()); mi = int(min_var.get()); s = int(sec_var.get())
+            except ValueError:
+                messagebox.showerror("Error", "Time fields must be integers.")
+                return
+            if not messagebox.askyesno("Confirm",
+                                       f"Set robot time to {y:04d}-{mo:02d}-{d:02d} {h:02d}:{mi:02d}:{s:02d}?"):
+                return
+            try:
+                ret = robot.set_system_time(y, mo, d, h, mi, s)
+                if ret == 0:
+                    messagebox.showinfo("Success", "Robot time updated.")
+                    refresh_robot_time()
+                else:
+                    messagebox.showerror("Failed",
+                                         f"Failed to set time.\nError: {robot._get_operate_error_msg(ret)}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to set time: {e}")
+
+        tk.Button(time_btn_frame, text="Sync from PC", width=12,
+                  font=("Arial", 10), bg="#9E9E9E", fg="white",
+                  command=sync_from_pc).pack(side="left", padx=10)
+        tk.Button(time_btn_frame, text="Set Time", width=12,
+                  font=("Arial", 10, "bold"), bg="#4CAF50", fg="white",
+                  command=apply_new_time).pack(side="left", padx=10)
+
+        # ==================== Reboot ====================
+        reboot_title_frame = tk.Frame(config_ip_window, bg="white")
+        reboot_title_frame.pack(fill="x", padx=5, pady=(10, 5))
+        tk.Label(reboot_title_frame, text="System Reboot", bg="#2196F3",
+                 fg="white", font=("Arial", 10, "bold")).pack(fill='x')
+
+        reboot_hint_frame = tk.Frame(config_ip_window, bg="white")
+        reboot_hint_frame.pack(fill="x", padx=20, pady=(4, 8))
+        tk.Label(reboot_hint_frame,
+                 text="Rebooting will disconnect the controller.\nPlease reconnect after the robot restarts.",
+                 bg="white", fg="#F44336", font=("Arial", 8), anchor='w',
+                 justify='left').pack(fill="x")
+
+        def do_reboot():
+            if not messagebox.askyesno("Confirm Reboot",
+                                       "Are you sure you want to reboot the robot controller?\n\n"
+                                       "The connection will be lost and you must reconnect afterwards."):
+                return
+            try:
+                ret = robot.reboot()
+                if ret == 0:
+                    messagebox.showinfo("Rebooting",
+                                        "Robot is rebooting.\nPlease reconnect after it restarts.")
+                    config_ip_window.destroy()
+                else:
+                    messagebox.showerror("Failed",
+                                         f"Reboot failed.\nError: {robot._get_operate_error_msg(ret)}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Reboot failed: {e}")
+
+        reboot_btn_frame = tk.Frame(config_ip_window, bg="white")
+        reboot_btn_frame.pack(pady=(0, 15))
+        tk.Button(reboot_btn_frame, text="Reboot Robot", width=14,
+                  font=("Arial", 11, "bold"), bg="#F44336", fg="white",
+                  command=do_reboot).pack(side="left", padx=10)
 
     def system_update_dialog(self):
         if not self.connected:

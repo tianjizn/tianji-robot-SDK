@@ -125,7 +125,9 @@ typedef enum
 	OPINS_SYSTEM_GET_TIME = 17,				 // Input: null; Output: m_OpValueS, "YYYY-MM-DD hh:mm:ss"
 	OPINS_SYSTEM_SET_IP = 18,				 // Input: m_OpValueS, "192.168.1.190"; Output: null
 	OPINS_SYSTEM_GET_IP = 19,				 // Input: null; Output: m_OpValueS, "192.168.1.190"
-
+	OPINS_SYSTEM_SET_SN = 21,                // Input: m_OpValueS; Output: null
+	OPINS_SYSTEM_GET_SN = 22,                // Input: null; Output: m_OpValueS
+	
 	// Arm0
 	OPINS_ARM0_RESET = 100,					// Input: null; Output: null
 	OPINS_ARM0_DISABLE_SOFTLIMIT = 101,		// Input: m_OpValueI, bit0~7 for each enc; Output: null

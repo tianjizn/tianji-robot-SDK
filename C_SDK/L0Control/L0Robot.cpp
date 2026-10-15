@@ -39,6 +39,16 @@ int FX_L0_System_GetSystemIP(char ip_str[20])
     return ((RobotCtrl::System_GetSystemIP(ip_str) == FX_TRUE) ? 0 : -1);
 }
 
+int FX_L0_System_SetSN(char serial[30])
+{
+    return ((RobotCtrl::System_SetSN(serial) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_System_GetSN(char serial[30])
+{
+    return ((RobotCtrl::System_GetSN(serial) == FX_TRUE) ? 0 : -1);
+}
+
 /*=============================================================================
  * 连接处理
  *============================================================================*/

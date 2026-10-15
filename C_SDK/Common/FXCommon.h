@@ -21,7 +21,7 @@
 
 #define FX_SDK_MAJOR_VERSION 4UL /**< Major version number */
 #define FX_SDK_MINOR_VERSION 5UL /**< Minor version number */
-#define FX_SDK_PATCH_VERSION 0UL /**< Patch version number */
+#define FX_SDK_PATCH_VERSION 1UL /**< Patch version number */
 
 /**
  * @brief Construct a packed 32-bit SDK version value.

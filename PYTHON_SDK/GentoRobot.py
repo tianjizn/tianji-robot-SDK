@@ -519,10 +519,9 @@ class ArmsSynchronousPlanningParams(Structure):
 # ==================== code dictionary ====================
 robot_type_map = {
     0: 'Null',
-    1: 'MarvinProM3',
-    2: 'MarvinProM6',
-    3: 'GentoSkye',
-    4: 'GentoLuna'
+    1: 'MarvinPro',
+    2: 'GentoSkye',
+    3: 'GentoLuna'
 }
 
 state_map = {
@@ -798,6 +797,12 @@ class GentoRobot:
 
         d.FX_L1_System_GetSystemIP.argtypes = [c_char_p]
         d.FX_L1_System_GetSystemIP.restype = c_int32
+
+        d.FX_L1_System_SetSN.argtypes = [c_char_p]
+        d.FX_L1_System_SetSN.restype = c_int32
+
+        d.FX_L1_System_GetSN.argtypes = [c_char_p]
+        d.FX_L1_System_GetSN.restype = c_int32
 
         # State feedback
         d.FX_L1_Fbk_GetCtrlObjDof.argtypes = [c_int32]
@@ -1504,6 +1509,30 @@ class GentoRobot:
             return ret, buf.value.decode('utf-8')
         return ret, ''
 
+    def set_system_sn(self, serial: str) -> int:
+        """Set the robot serial number.
+
+        @param serial: Serial number string (max 29 characters; must fit in a 30-byte buffer).
+        @return: 0 on success, negative error code otherwise.
+        @raise ValueError: If serial is empty or longer than 29 characters.
+        """
+        if not serial:
+            raise ValueError("serial must not be empty")
+        if len(serial) > 29:
+            raise ValueError("serial must be at most 29 characters")
+        return self.dll.FX_L1_System_SetSN(serial.encode('utf-8'))
+
+    def get_system_sn(self) -> tuple:
+        """Get the robot serial number.
+
+        @return: Tuple (return_code, serial_string). serial_string is empty on failure.
+        """
+        buf = create_string_buffer(30)
+        ret = self.dll.FX_L1_System_GetSN(buf)
+        if ret == 0:
+            return ret, buf.value.decode('utf-8')
+        return ret, ''
+
     # ==================== State feedback ====================
 
     def get_ctrl_obj_dof(self, obj_type: int) -> int:
@@ -2075,7 +2104,7 @@ class GentoRobot:
         """Send a joint position command to the specified object.
 
         @param obj_type: Object type (FXObjType). Supports ARM0, ARM1, BODY, HEAD, LIFT.
-        @param positions: List of target joint positions. Length must match the object's DOF:
+        @param positions: List of target joint positions [°]. Length must match the object's DOF:
                           arm:7, body:6, head:3, lift:2.
         @return: 0 on success, negative error code otherwise.
         @raise ValueError: If obj_type is unsupported or number of positions is incorrect.
@@ -2100,7 +2129,7 @@ class GentoRobot:
         """Send a joint position command in PD control mode.
 
         @param obj_type: Object type (FXObjType). Supports ARM0, ARM1.
-        @param positions: List of 7 target joint positions (radians).
+        @param positions: List of 7 target joint positions [°].
         @return: 0 on success, negative error code otherwise.
         @raise ValueError: If positions does not have exactly 7 elements.
         """
@@ -3172,6 +3201,10 @@ class GentoRobot:
             -21: "Invalid hand type to support",
             -22: "Controller has already linked by other client",
             -23: "Invalid thread id",
+            -24: "Too many sample data item registed",
+            -25: "Invalid sample data item",
+            -26: "Invalid sample data length",
+            -27: "Link lost while calling function",
 
             -1000: "Kinematics context or arm environment is not initialized",
             -1001: "Kinematics environment initialization failed",
