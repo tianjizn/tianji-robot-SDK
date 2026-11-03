@@ -15,12 +15,15 @@
  */
 
 #include "L1Robot.h"
+#include <thread>
 
 #ifdef _WIN32
 #define SLEEP_MS(ms) Sleep(ms)
 #else
 #define SLEEP_MS(ms) usleep((ms) * 1000)
 #endif
+
+int exit_thread = 0; ///< Global flag to request all threads to exit
 
 void CheckLinkState()
 {
@@ -40,6 +43,25 @@ void CheckLinkState()
     else
     {
         printf("Link state is unknown(%d)\n", link_state);
+    }
+}
+
+/**
+ * @brief Thread for receiving message from controller.
+ *
+ * The thread exits when @ref exit_thread is set to 1.
+ */
+void MSG_thread()
+{
+    char msg[1024] = { 0 };
+
+    while (exit_thread == 0)
+    {
+        if (FX_L1_Fbk_GetSystemMsg(msg, 1024) > 0)
+        {
+            printf("Receive message from controller: %s\n", msg);
+        }
+        SLEEP_MS(100);
     }
 }
 
@@ -65,6 +87,12 @@ int main(int argc, char** argv)
     /* Get SDK version */
     sdk_version = FX_L1_System_GetSDKVersion();
     printf("SDK version is 0x%08x\n", sdk_version);
+
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+    std::thread msg_thread(MSG_thread);
+    SLEEP_MS(500);
 
     /* Establish communication with the controller */
     if (FX_L1_System_Link(6, 6, 7, 190, FX_LOG_ALL_FLAG) < 0)
@@ -97,5 +125,7 @@ int main(int argc, char** argv)
 WAIT_EXIT:
     printf("Press any key to exit\n");
     getchar();
+    exit_thread = 1;
+    msg_thread.join();
     return 0;
 }

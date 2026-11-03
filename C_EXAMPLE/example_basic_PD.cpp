@@ -1,6 +1,6 @@
 /**
  * @file example_basic_PD.cpp
- * @brief Basic example demonstrating PD (Position¨CDirect) control mode of L1 robot arm.
+ * @brief Basic example demonstrating PD (Positionâ€“Direct) control mode of L1 robot arm.
  *
  * This example shows how to:
  * - Initialize communication with the L1 robot system

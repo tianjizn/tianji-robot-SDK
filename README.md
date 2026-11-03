@@ -1,4 +1,4 @@
-# Robot SDK - 天机机器人软件开发工具包
+# FX L1 Robot SDK - 人形机器人软件开发工具包
 
 ## 版本管理与兼容性
 
@@ -16,9 +16,9 @@
 当连接错误为 `-4` 时，可先调用获取SDK版本接口，再根据SDK版本对控制器进行升级或降级。
 ---
 
-## 1. 简介
+## 1. 机器人简介
 
-天机机器人产品线包括：
+FX 人形机器人是面向科研、工业协作和服务应用的先进双臂多自由度机器人系统。产品线包括：
 
 - **Marvin Pro M3 / M6** — 通用人形平台
 - **Gento Skye / Gento Luna** — 双臂协作人形机器人
@@ -74,6 +74,7 @@ FX L1 Robot SDK 提供了一套高层 C API，用于控制、监控和编程 FX 
 
 | 版本    | 日期         | 说明 |
 |-------|------------|------|
+| 4.4.2 | 2026-06-29 | 增加接口：FX_L1_System_SetSystemTime,FX_L1_System_GetSystemTime,FX_L1_System_SetSystemIP,FX_L1_System_GetSystemIP,FX_L1_Fbk_ResetSystemMsg,FX_L1_Fbk_GetSystemMsg； 修改接口：FX_L1_Fbk_GetCtrlObjServoVersion|
 | 4.4.2 | 2026-06-16 | 增加用户数据采集接口：FX_L1_Fbk_GetUserData，FX_L1_Fbk_ResetUserDataSet，FX_L1_Fbk_RegisterUserDataSet，FX_L1_Fbk_CheckUserDataSet|
 | 4.4.2 | 2026-06-12 | FX_L1_Runtime_*接口支持多线程安全，最多7个线程同时调用|
 | 4.4.1 | 2026-06-05 | 修复接口：FX_L1_Runtime_StopTraj|
@@ -93,15 +94,24 @@ GENTO_SDK/
 ├── C_SDK/                          # SDK 源码
 │   ├── Common/                     # 公共头文件（FXCommon.h、FXErrorCode.h）
 │   ├── FileClient/                 # 文件传输客户端
+|   |── FXConfig/                   # 配置文件
+│   │   ├── InterferenceCfg/        # 接口文件
+│   │   ├── URDF/                   # URDF 
+|   |── FXUtility/                  # 公用功能，跨层
+│   │   ├── FXCfg/                  # 解析文件库
+│   │   ├── FXMath/                 # 公共数学库
+|   |── Interf/                     # 公用功能，碰撞检测
 │   ├── Kinematics/                 # 运动学子模块
 │   │   ├── ArmKinematics/          # 机械臂运动学
-│   │   ├── BaseMath/               # 基础数学库
 │   │   ├── DynaIdent/              # 动力学辨识
 │   │   ├── KineCommon/             # 运动学通用类型
 │   │   ├── MotionPlanner/          # 轨迹规划器
 │   │   └── SkyeBodyKinematics/     # Skye 机身运动学
 │   ├── L0Control/                  # 底层通信与控制
-│   └── L1Robot/                    # 上层 API（L1Robot.h、L0KineMotion.h）
+│   └── L1Robot/                    # 上层 API
+├── FX_PLATFORM/                    # UI源码
+│   ├── setup.py/                   # 软件构建执行文件脚本
+│   ├── UI.py/                      # 上位机软件源码
 ├── C_EXAMPLE/                      # C++ 示例 — 直接调用 C_SDK 源码
 ├── C_EXAMPLE_USE_DLL_SO/           # C++ 示例 — 调用编译后的 DLL/SO 库
 │   ├── build_windows.bat           # Windows 示例编译脚本
@@ -109,10 +119,11 @@ GENTO_SDK/
 ├── PYTHON_SDK/                     # Python 封装层（基于 DLL/SO）
 │   └── GentoRobot.py               # Python 主入口类
 ├── PYTHON_EXAMPLE/                 # Python 示例程序
+|── FXPlatform                      # linux上位机，ubuntu20.04及以上可使用
+|── FXPlatform.exe                  # windows上位机
 ├── win_auto_compile.bat            # Windows 一键编译脚本（源码 → DLL）
 ├── linux_auto_compile.sh           # Linux 一键编译脚本（源码 → SO）
-├── compile_methods.txt             # 各平台编译命令参考
-└── README.md
+└── README.md                       # SDK文档
 ```
 
 ## 5. 快速开始
@@ -121,6 +132,7 @@ GENTO_SDK/
 
 - **操作系统**：Linux（Ubuntu 20.04(glibc=2.31) 及以上）或 Windows 10/11
 - **编译器**：GCC 9+（Linux）、MinGW g++ / MSYS2（Windows）
+- **PYTHON版本**： python>=3.10
 - **网络**：以太网连接机器人控制器（建议使用静态 IP）
 - **机器人控制器 IP**：默认 6.6.7.190（请以实际机器人文档为准）
 
@@ -197,32 +209,64 @@ SDK 支持三种使用方式：
 Windows：
 ```bash
 g++ -w C_EXAMPLE/main.cpp \
-  C_SDK/L0Control/*.cpp C_SDK/FileClient/*.cpp C_SDK/L1Robot/*.cpp \
-  C_SDK/Kinematics/*.cpp C_SDK/Kinematics/ArmKinematics/*.cpp \
-  C_SDK/Kinematics/BaseMath/*.cpp C_SDK/Kinematics/DynaIdent/*.cpp \
-  C_SDK/Kinematics/KineCommon/*.cpp C_SDK/Kinematics/MotionPlanner/*.cpp \
+  C_SDK/FXUtility/FXMath/*.cpp \
+  C_SDK/FXUtility/FXCfg/*.cpp \
+  C_SDK/Interf/*.cpp \
+  C_SDK/Kinematics/*.cpp \
+  C_SDK/Kinematics/ArmKinematics/*.cpp \
+  C_SDK/Kinematics/DynaIdent/*.cpp \
+  C_SDK/Kinematics/KineCommon/*.cpp \
+  C_SDK/Kinematics/MotionPlanner/*.cpp \
   C_SDK/Kinematics/SkyeBodyKinematics/*.cpp \
-  -I C_SDK/Common -I C_SDK/Kinematics -I C_SDK/Kinematics/ArmKinematics \
-  -I C_SDK/Kinematics/BaseMath -I C_SDK/Kinematics/DynaIdent \
-  -I C_SDK/Kinematics/KineCommon -I C_SDK/Kinematics/MotionPlanner \
+  C_SDK/FileClient/*.cpp \
+  C_SDK/L0Control/*.cpp \
+  C_SDK/L1Robot/*.cpp \
+  -I C_SDK/Common \
+  -I C_SDK/FXUtility \
+  -I C_SDK/FXUtility/FXMath \
+  -I C_SDK/FXUtility/FXCfg \
+  -I C_SDK/Interf \
+  -I C_SDK/Kinematics \
+  -I C_SDK/Kinematics/ArmKinematics \
+  -I C_SDK/Kinematics/DynaIdent \
+  -I C_SDK/Kinematics/KineCommon \
+  -I C_SDK/Kinematics/MotionPlanner \
   -I C_SDK/Kinematics/SkyeBodyKinematics \
-  -I C_SDK/FileClient -I C_SDK/L0Control -I C_SDK/L1Robot \
+  -I C_SDK/FileClient \
+  -I C_SDK/L0Control \
+  -I C_SDK/L1Robot \
   -o main.exe -lws2_32 -lwinmm -DCMPL_WIN -DL1_SDK_EXPORTS
 ```
 
 Linux：
 ```bash
 g++ -w C_EXAMPLE/main.cpp \
-  C_SDK/L0Control/*.cpp C_SDK/FileClient/*.cpp C_SDK/L1Robot/*.cpp \
-  C_SDK/Kinematics/*.cpp C_SDK/Kinematics/ArmKinematics/*.cpp \
-  C_SDK/Kinematics/BaseMath/*.cpp C_SDK/Kinematics/DynaIdent/*.cpp \
-  C_SDK/Kinematics/KineCommon/*.cpp C_SDK/Kinematics/MotionPlanner/*.cpp \
+  C_SDK/FXUtility/FXMath/*.cpp \
+  C_SDK/FXUtility/FXCfg/*.cpp \
+  C_SDK/Interf/*.cpp \
+  C_SDK/Kinematics/*.cpp \
+  C_SDK/Kinematics/ArmKinematics/*.cpp \
+  C_SDK/Kinematics/DynaIdent/*.cpp \
+  C_SDK/Kinematics/KineCommon/*.cpp \
+  C_SDK/Kinematics/MotionPlanner/*.cpp \
   C_SDK/Kinematics/SkyeBodyKinematics/*.cpp \
-  -I C_SDK/Common -I C_SDK/Kinematics -I C_SDK/Kinematics/ArmKinematics \
-  -I C_SDK/Kinematics/BaseMath -I C_SDK/Kinematics/DynaIdent \
-  -I C_SDK/Kinematics/KineCommon -I C_SDK/Kinematics/MotionPlanner \
+  C_SDK/FileClient/*.cpp \
+  C_SDK/L0Control/*.cpp \
+  C_SDK/L1Robot/*.cpp \
+  -I C_SDK/Common \
+  -I C_SDK/FXUtility \
+  -I C_SDK/FXUtility/FXMath \
+  -I C_SDK/FXUtility/FXCfg \
+  -I C_SDK/Interf \
+  -I C_SDK/Kinematics \
+  -I C_SDK/Kinematics/ArmKinematics \
+  -I C_SDK/Kinematics/DynaIdent \
+  -I C_SDK/Kinematics/KineCommon \
+  -I C_SDK/Kinematics/MotionPlanner \
   -I C_SDK/Kinematics/SkyeBodyKinematics \
-  -I C_SDK/FileClient -I C_SDK/L0Control -I C_SDK/L1Robot \
+  -I C_SDK/FileClient \
+  -I C_SDK/L0Control \
+  -I C_SDK/L1Robot \
   -o main -lrt -DCMPL_LIN -DL1_SDK_EXPORTS
 ```
 
@@ -233,16 +277,32 @@ g++ -w C_EXAMPLE/main.cpp \
 Windows — 编译并链接 DLL：
 ```bash
 # 第一步：编译 DLL（C/C++ 调用用）
-g++ C_SDK/L0Control/*.cpp C_SDK/FileClient/*.cpp C_SDK/L1Robot/*.cpp \
-  C_SDK/Kinematics/*.cpp C_SDK/Kinematics/ArmKinematics/*.cpp \
-  C_SDK/Kinematics/BaseMath/*.cpp C_SDK/Kinematics/DynaIdent/*.cpp \
-  C_SDK/Kinematics/KineCommon/*.cpp C_SDK/Kinematics/MotionPlanner/*.cpp \
+g++ C_SDK/FXUtility/FXMath/*.cpp \
+  C_SDK/FXUtility/FXCfg/*.cpp \
+  C_SDK/Interf/*.cpp \
+  C_SDK/Kinematics/*.cpp \
+  C_SDK/Kinematics/ArmKinematics/*.cpp \
+  C_SDK/Kinematics/DynaIdent/*.cpp \
+  C_SDK/Kinematics/KineCommon/*.cpp \
+  C_SDK/Kinematics/MotionPlanner/*.cpp \
   C_SDK/Kinematics/SkyeBodyKinematics/*.cpp \
-  -I C_SDK/Common -I C_SDK/Kinematics -I C_SDK/Kinematics/ArmKinematics \
-  -I C_SDK/Kinematics/BaseMath -I C_SDK/Kinematics/DynaIdent \
-  -I C_SDK/Kinematics/KineCommon -I C_SDK/Kinematics/MotionPlanner \
+  C_SDK/FileClient/*.cpp \
+  C_SDK/L0Control/*.cpp \
+  C_SDK/L1Robot/*.cpp \
+  -I C_SDK/Common \
+  -I C_SDK/FXUtility \
+  -I C_SDK/FXUtility/FXMath \
+  -I C_SDK/FXUtility/FXCfg \
+  -I C_SDK/Interf \
+  -I C_SDK/Kinematics \
+  -I C_SDK/Kinematics/ArmKinematics \
+  -I C_SDK/Kinematics/DynaIdent \
+  -I C_SDK/Kinematics/KineCommon \
+  -I C_SDK/Kinematics/MotionPlanner \
   -I C_SDK/Kinematics/SkyeBodyKinematics \
-  -I C_SDK/FileClient -I C_SDK/L0Control -I C_SDK/L1Robot \
+  -I C_SDK/FileClient \
+  -I C_SDK/L0Control \
+  -I C_SDK/L1Robot \
   -Wall -O2 -shared -o libGentoSDK.dll -DL1_SDK_EXPORTS -DCMPL_WIN \
   -lws2_32 -lwinmm
 
@@ -254,16 +314,32 @@ g++ main.cpp -I C_SDK/L1Robot -I C_SDK/Common \
 Linux — 编译并链接 SO：
 ```bash
 # 第一步：编译 SO
-g++ C_SDK/L0Control/*.cpp C_SDK/FileClient/*.cpp C_SDK/L1Robot/*.cpp \
-  C_SDK/Kinematics/*.cpp C_SDK/Kinematics/ArmKinematics/*.cpp \
-  C_SDK/Kinematics/BaseMath/*.cpp C_SDK/Kinematics/DynaIdent/*.cpp \
-  C_SDK/Kinematics/KineCommon/*.cpp C_SDK/Kinematics/MotionPlanner/*.cpp \
+g++ C_SDK/FXUtility/FXMath/*.cpp \
+  C_SDK/FXUtility/FXCfg/*.cpp \
+  C_SDK/Interf/*.cpp \
+  C_SDK/Kinematics/*.cpp \
+  C_SDK/Kinematics/ArmKinematics/*.cpp \
+  C_SDK/Kinematics/DynaIdent/*.cpp \
+  C_SDK/Kinematics/KineCommon/*.cpp \
+  C_SDK/Kinematics/MotionPlanner/*.cpp \
   C_SDK/Kinematics/SkyeBodyKinematics/*.cpp \
-  -I C_SDK/Common -I C_SDK/Kinematics -I C_SDK/Kinematics/ArmKinematics \
-  -I C_SDK/Kinematics/BaseMath -I C_SDK/Kinematics/DynaIdent \
-  -I C_SDK/Kinematics/KineCommon -I C_SDK/Kinematics/MotionPlanner \
+  C_SDK/FileClient/*.cpp \
+  C_SDK/L0Control/*.cpp \
+  C_SDK/L1Robot/*.cpp \
+  -I C_SDK/Common \
+  -I C_SDK/FXUtility \
+  -I C_SDK/FXUtility/FXMath \
+  -I C_SDK/FXUtility/FXCfg \
+  -I C_SDK/Interf \
+  -I C_SDK/Kinematics \
+  -I C_SDK/Kinematics/ArmKinematics \
+  -I C_SDK/Kinematics/DynaIdent \
+  -I C_SDK/Kinematics/KineCommon \
+  -I C_SDK/Kinematics/MotionPlanner \
   -I C_SDK/Kinematics/SkyeBodyKinematics \
-  -I C_SDK/FileClient -I C_SDK/L0Control -I C_SDK/L1Robot \
+  -I C_SDK/FileClient \
+  -I C_SDK/L0Control \
+  -I C_SDK/L1Robot \
   -Wall -O2 -fPIC -shared -o libGentoSDK.so -lpthread -lrt -DCMPL_LIN
 
 # 第二步：链接你的程序，注意实际路径，这里假设在 main.cpp在主目录下，与 C_SDK 在同一目录
@@ -411,7 +487,7 @@ lib/
 
 ### 6.5 线程安全
 
-L1 SDK 默认非线程安全。不要从多个线程并发调用 API 函数，除非自行做了外部同步。
+L1 SDK 默认多线程安全（L0及以下统一使用第0号线程）支持1~7号线程并发调用 API 函数。
 
 ### 6.6 错误处理
 
@@ -529,22 +605,22 @@ SDK 版本必须与控制器固件兼容。请将 SDK 或机器人控制器更�
 ### 8.2 性能考量
 
 - 实时指令（`FX_L1_Runtime_SetJointPosCmd`）通过 UDP 发送，不保证在硬实时截止时间内到达。对时间要求苛刻的应用，建议使用 L0 实时接口。
-- 轨迹规划函数在 PC 端执行计算；点集不能超过 5,000 个点， 可能导致内存占用大幅增加②规划失败。
+- 轨迹规划函数在 PC 端执行计算；点集不能超过 5000 个点， 可能导致内存占用大幅增加，导致规划失败。
 
 ### 8.3 支持的机器人型号与自由度
 
 | 机器人型号 | 臂 DOF | 躯干 DOF | 头部 DOF | 升降台 DOF |
 |------------|--------|----------|----------|-------------|
-| Marvin Pro M3 | 7+7 | 0 | 3 | 2 |
-| Marvin Pro M6 | 7+7 | 6（腰部） | 3 | 2 |
-| Gento Skye | 7+7 | 3（躯干） | 3 | 2 |
+| Marvin Pro M3 | 7+7 | 0 | 0 | 0 |
+| Marvin Pro M6 | 7+7 | 0 | 0 | 0 |
+| Gento Skye | 7+7 | 3 | 3 | 2 |
 | Gento Luna | 7+7 | 6 | 3 | 0 |
 
 可在运行时通过 `FX_L1_Fbk_GetCtrlObjDof()` 查询实际 DOF。
 
 ### 8.4 文件传输
 
-`FX_L1_System_SendFile()` 和 `RecvFile()` 使用专有的可靠 UDP 文件传输协议。最大文件大小为 2 GB。请确保远程路径可写（如控制器上的 `/home/fx/`）。
+`FX_L1_System_SendFile()` 和 `RecvFile()` 使用专有的可靠 UDP 文件传输协议。文件过大将会传输失败。请确保远程路径可写（如控制器上的 `/home/FUSION/`）。
 
 ### 8.5 固件升级
 
@@ -564,4 +640,4 @@ SDK 版本必须与控制器固件兼容。请将 SDK 或机器人控制器更�
 
 ---
 
-*FX Robotics SDK — L1 API Reference | Version 4.2.1 | © FX Robotics. All rights reserved.*
+*FX Robotics SDK/API Reference | Version 4.4.3 | © FX Robotics. All rights reserved.*

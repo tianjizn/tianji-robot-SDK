@@ -691,27 +691,6 @@ fault_code_dict_EN = {
 
 
 
-
-class SwitchableLock:
-    def __init__(self):
-        self._real_lock = threading.Lock()
-        self._enabled = True
-
-    def enable(self):
-        self._enabled = True
-
-    def disable(self):
-        self._enabled = False
-
-    def __enter__(self):
-        if self._enabled:
-            self._real_lock.acquire()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._enabled:
-            self._real_lock.release()
-
-
 # ==================== GentoRobot class ====================
 class GentoRobot:
     """Main class for controlling Gento series robots.
@@ -727,7 +706,6 @@ class GentoRobot:
         @param precision: Number of decimal places to round float values in dictionaries (default 3).
         @raise RuntimeError: If unable to get RT/SG pointers from the SDK.
         """
-        self._lock = SwitchableLock()
 
         self._thread_id = 1
 
@@ -800,6 +778,18 @@ class GentoRobot:
         d.FX_L1_System_RecvFile.argtypes = [c_char_p, c_char_p]
         d.FX_L1_System_RecvFile.restype = c_int32
 
+        d.FX_L1_System_SetSystemTime.argtypes = [c_int, c_int, c_int, c_int, c_int, c_int]
+        d.FX_L1_System_SetSystemTime.restype = c_int32
+
+        d.FX_L1_System_GetSystemTime.argtypes = [c_char_p]
+        d.FX_L1_System_GetSystemTime.restype = c_int32
+
+        d.FX_L1_System_SetSystemIP.argtypes = [POINTER(c_int * 4)]
+        d.FX_L1_System_SetSystemIP.restype = c_int32
+
+        d.FX_L1_System_GetSystemIP.argtypes = [c_char_p]
+        d.FX_L1_System_GetSystemIP.restype = c_int32
+
         # State feedback
         d.FX_L1_Fbk_GetCtrlObjDof.argtypes = [c_int32]
         d.FX_L1_Fbk_GetCtrlObjDof.restype = c_int32
@@ -810,7 +800,11 @@ class GentoRobot:
         d.FX_L1_Fbk_GetRobotType.argtypes = []
         d.FX_L1_Fbk_GetRobotType.restype = c_int32
 
-        d.FX_L1_Fbk_GetCtrlObjServoVersion.argtypes = [c_int32, POINTER((c_char * 30) * 7)]
+        d.FX_L1_Fbk_GetCtrlObjServoVersion.argtypes = [
+            c_int32,
+            POINTER((c_char * 30) * 7),   
+            POINTER(c_uint * 7)        
+        ]
         d.FX_L1_Fbk_GetCtrlObjServoVersion.restype = c_int32
 
         d.FX_L1_Fbk_GetCtrlObjSensorVersionAndSerial.argtypes = [c_int32, POINTER(c_int32 * 7),
@@ -837,6 +831,12 @@ class GentoRobot:
 
         d.FX_L1_Fbk_CheckUserDataSet.argtypes = [c_int32]
         d.FX_L1_Fbk_CheckUserDataSet.restype = c_int32
+
+        d.FX_L1_Fbk_ResetSystemMsg.argtypes = []
+        d.FX_L1_Fbk_ResetSystemMsg.restype = c_int32
+
+        d.FX_L1_Fbk_GetSystemMsg.argtypes = [c_char_p, c_int32]
+        d.FX_L1_Fbk_GetSystemMsg.restype = c_int32
 
         # State switching
         switch_funcs = [
@@ -1340,12 +1340,6 @@ class GentoRobot:
             data["hands"].append(hand_data)
         return data
 
-    def enable_lock(self):
-        self._lock.enable()
-
-    def disable_lock(self):
-        self._lock.disable()
-
     # ==================== System ====================
     def get_sdk_version(self) -> str:
         """Return the SDK version as a hexadecimal string (8 characters)."""
@@ -1369,8 +1363,7 @@ class GentoRobot:
 
         @return: Log level bitmask (see FXLogMask).
         """
-        with self._lock:
-            return self.dll.FX_L1_System_GetLogLevel()
+        return self.dll.FX_L1_System_GetLogLevel()
 
     def link(self, ip1: int, ip2: int, ip3: int, ip4: int, log_level=FXLogMask.FX_LOG_INFO_FLAG) -> int:
         """Establish connection to the robot controller.
@@ -1383,13 +1376,12 @@ class GentoRobot:
         @return: On success, returns a positive system version number.
                  On failure, returns an error code.
         """
-        with self._lock:
-            ret = self.dll.FX_L1_System_Link(ip1, ip2, ip3, ip4, log_level)
-            if ret >= 0:
-                self._connected = True
-            else:
-                self._connected = False
-            return ret
+        ret = self.dll.FX_L1_System_Link(ip1, ip2, ip3, ip4, log_level)
+        if ret >= 0:
+            self._connected = True
+        else:
+            self._connected = False
+        return ret
 
     def check_link_state(self):
         """ Check link state
@@ -1399,22 +1391,19 @@ class GentoRobot:
                 1 values indicate an active or established connection;
                 -1 values indicate an active connection but can't receive.
         """
-        with self._lock:
-            return self.dll.FX_L1_System_GetLinkState()
+        return self.dll.FX_L1_System_GetLinkState()
 
     def unlink(self):
         """Disconnect from the robot controller."""
-        with self._lock:
-            self.dll.FX_L1_System_Unlink()
-            self._connected = False
+        self.dll.FX_L1_System_Unlink()
+        self._connected = False
 
     def reboot(self) -> int:
         """Reboot the robot controller.
 
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_System_Reboot()
+        return self.dll.FX_L1_System_Reboot()
 
     def system_update(self, update_file_path: str, ini_file_path: str) -> int:
         """Update the robot system using provided firmware files.
@@ -1425,8 +1414,7 @@ class GentoRobot:
         """
         update_arg = update_file_path.encode('utf-8') if update_file_path else None
         ini_arg = ini_file_path.encode('utf-8') if ini_file_path else None
-        with self._lock:
-            return self.dll.FX_L1_System_Update(update_arg, ini_arg)
+        return self.dll.FX_L1_System_Update(update_arg, ini_arg)
 
     def send_file(self, local_path: str, remote_path: str) -> int:
         """Send a file to the robot controller.
@@ -1435,8 +1423,7 @@ class GentoRobot:
         @param remote_path: Destination path on the controller.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_System_SendFile(local_path.encode('utf-8'), remote_path.encode('utf-8'))
+        return self.dll.FX_L1_System_SendFile(local_path.encode('utf-8'), remote_path.encode('utf-8'))
 
     def recv_file(self, local_path: str, remote_path: str) -> int:
         """Receive a file from the robot controller.
@@ -1445,8 +1432,56 @@ class GentoRobot:
         @param remote_path: Remote file path on the controller.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_System_RecvFile(local_path.encode('utf-8'), remote_path.encode('utf-8'))
+        return self.dll.FX_L1_System_RecvFile(local_path.encode('utf-8'), remote_path.encode('utf-8'))
+
+    def set_system_time(self, year: int, month: int, day: int, hour: int, minute: int, second: int) -> int:
+        """Set the system time on the robot controller.
+
+        @param year: Year (e.g., 2026).
+        @param month: Month (1-12).
+        @param day: Day (1-31).
+        @param hour: Hour (0-23).
+        @param minute: Minute (0-59).
+        @param second: Second (0-59).
+        @return: 0 on success, negative error code otherwise.
+        """
+        return self.dll.FX_L1_System_SetSystemTime(year, month, day, hour, minute, second)
+
+    def get_system_time(self) -> tuple:
+        """Get the current system time from the robot controller.
+
+        @return: Tuple (return_code, time_string). time_string is formatted as "YYYY-MM-DD HH:MM:SS".
+                 On failure, time_string is empty.
+        """
+        buf = create_string_buffer(20)
+        ret = self.dll.FX_L1_System_GetSystemTime(buf)
+        if ret == 0:
+            return ret, buf.value.decode('utf-8')
+        return ret, ''
+
+    def set_system_ip(self, ip: List[int]) -> int:
+        """Set the IP address of the robot controller.
+
+        @param ip: List of 4 integers representing IP octets (e.g., [192, 168, 1, 100]).
+        @return: 0 on success, negative error code otherwise.
+        @raise ValueError: If ip does not have exactly 4 elements.
+        """
+        if len(ip) != 4:
+            raise ValueError("ip must have 4 elements")
+        ip_arr = (c_int * 4)(*ip)
+        return self.dll.FX_L1_System_SetSystemIP(ip_arr)
+
+    def get_system_ip(self) -> tuple:
+        """Get the current IP address of the robot controller.
+
+        @return: Tuple (return_code, ip_string). ip_string is formatted as "xxx.xxx.xxx.xxx".
+                 On failure, ip_string is empty.
+        """
+        buf = create_string_buffer(20)
+        ret = self.dll.FX_L1_System_GetSystemIP(buf)
+        if ret == 0:
+            return ret, buf.value.decode('utf-8')
+        return ret, ''
 
     # ==================== State feedback ====================
 
@@ -1456,30 +1491,37 @@ class GentoRobot:
         @param obj_type: Object type (FXObjType).
         @return: DOF count.
         """
-        with self._lock:
-            return self.dll.FX_L1_Fbk_GetCtrlObjDof(obj_type)
+        return self.dll.FX_L1_Fbk_GetCtrlObjDof(obj_type)
 
-    def get_ctrl_obj_servo_version(self, obj_type: int) -> Tuple[int, List[str]]:
-        """Get servo version strings for each axis of the object.
+    def get_ctrl_obj_servo_version(self, obj_type: int) -> Tuple[int, List[str], List[int]]:
+        """Get servo firmware version strings and configuration version numbers for each axis.
 
         @param obj_type: Object type (FXObjType).
-        @return: Tuple of (return_code, version_strings). return_code is 0 on success,
-                 non-zero on failure (see FXFuncReturn). On failure, version_strings is an empty list.
+        @return: Tuple of (return_code, firmware_versions, config_versions).
+                return_code is 0 on success, non-zero on failure (see FXFuncReturn).
+                On failure, both lists are empty.
+                On success, firmware_versions is a list of 7 strings (max 29 chars each),
+                config_versions is a list of 7 unsigned integers.
         """
-        VersionArrayType = (c_char * 30) * 7
-        version_arr = VersionArrayType()
-        with self._lock:
-            ret = self.dll.FX_L1_Fbk_GetCtrlObjServoVersion(obj_type, version_arr)
-            if ret < 0:
-                return ret, []
-            result = []
-            for i in range(7):
-                raw_bytes = bytes(version_arr[i])
-                null_pos = raw_bytes.find(b'\x00')
-                if null_pos != -1:
-                    raw_bytes = raw_bytes[:null_pos]
-                result.append(raw_bytes.decode('utf-8', errors='ignore'))
-            return ret, result
+        FirmwareArrayType = (c_char * 30) * 7
+        firmware_arr = FirmwareArrayType()
+        config_arr = (c_uint * 7)()
+        ret = self.dll.FX_L1_Fbk_GetCtrlObjServoVersion(
+            obj_type,
+            firmware_arr,
+            config_arr
+        )
+        if ret != 0: 
+            return ret, [], []
+        fw_versions = []
+        for i in range(7):
+            raw = bytes(firmware_arr[i])
+            null_pos = raw.find(b'\x00')
+            if null_pos != -1:
+                raw = raw[:null_pos]
+            fw_versions.append(raw.decode('utf-8', errors='ignore'))
+        cfg_versions = [config_arr[i] for i in range(7)]
+        return ret, fw_versions, cfg_versions
 
     def get_ctrl_obj_sensor_version_and_serial(self, obj_type: int) -> Tuple[int, List[int], List[int]]:
         """Get sensor version and serial numbers for each axis.
@@ -1490,13 +1532,12 @@ class GentoRobot:
         """
         version_arr = (c_int32 * 7)()
         serial_arr = (c_int32 * 7)()
-        with self._lock:
-            ret = self.dll.FX_L1_Fbk_GetCtrlObjSensorVersionAndSerial(obj_type, version_arr, serial_arr)
-            if ret < 0:
-                return ret, [], []
-            versions = [version_arr[i] for i in range(7)]
-            serials = [serial_arr[i] for i in range(7)]
-            return ret, versions, serials
+        ret = self.dll.FX_L1_Fbk_GetCtrlObjSensorVersionAndSerial(obj_type, version_arr, serial_arr)
+        if ret < 0:
+            return ret, [], []
+        versions = [version_arr[i] for i in range(7)]
+        serials = [serial_arr[i] for i in range(7)]
+        return ret, versions, serials
 
     def get_ctrl_obj_physical_state(self, obj_type: int) -> tuple[int, int]:
         """Get the physical state of the object.
@@ -1505,9 +1546,8 @@ class GentoRobot:
         @return: Tuple (return_code, state_value).
         """
         state = c_int()
-        with self._lock:
-            ret = self.dll.FX_L1_Fbk_GetCtrlObjPhysicalState(obj_type, ctypes.byref(state))
-            return ret, state.value
+        ret = self.dll.FX_L1_Fbk_GetCtrlObjPhysicalState(obj_type, ctypes.byref(state))
+        return ret, state.value
 
     def current_state(self, obj_type: int) -> int:
         """Get the current control state of the object.
@@ -1515,18 +1555,16 @@ class GentoRobot:
         @param obj_type: Object type (FXObjType).
         @return: State code (see state_map).
         """
-        with self._lock:
-            return self.dll.FX_L1_Fbk_CurrentState(obj_type)
+        return self.dll.FX_L1_Fbk_CurrentState(obj_type)
 
     def get_robot_type(self) -> str:
         """Get the robot model name.
 
         @return: String describing the robot type (e.g., 'GentoSkye', 'GentoLuna').
         """
-        with self._lock:
-            ret = self.dll.FX_L1_Fbk_GetRobotType()
-            robot_type = robot_type_map.get(ret, f"{ret}")
-            return robot_type
+        ret = self.dll.FX_L1_Fbk_GetRobotType()
+        robot_type = robot_type_map.get(ret, f"{ret}")
+        return robot_type
 
     def get_servo_error_codes(self, obj_type: int) -> tuple[int, str]:
         """Get human-readable servo error codes for each axis.
@@ -1535,31 +1573,30 @@ class GentoRobot:
         @return: error code, multi-line string with errors per axis.
         """
         arr = (c_uint * 7)()
-        with self._lock:
-            ret = self.dll.FX_L1_State_GetServoErrorCode(obj_type, arr)
-            if ret != 0:
-                return ret, ''
-            if obj_type in (FXObjType.OBJ_ARM0, FXObjType.OBJ_ARM1):
-                num_axes = 7
-            elif obj_type == FXObjType.OBJ_BODY:
-                num_axes = 6
-            elif obj_type == FXObjType.OBJ_HEAD:
-                num_axes = 3
-            elif obj_type == FXObjType.OBJ_LIFT:
-                num_axes = 2
+        ret = self.dll.FX_L1_State_GetServoErrorCode(obj_type, arr)
+        if ret != 0:
+            return ret, ''
+        if obj_type in (FXObjType.OBJ_ARM0, FXObjType.OBJ_ARM1):
+            num_axes = 7
+        elif obj_type == FXObjType.OBJ_BODY:
+            num_axes = 6
+        elif obj_type == FXObjType.OBJ_HEAD:
+            num_axes = 3
+        elif obj_type == FXObjType.OBJ_LIFT:
+            num_axes = 2
+        else:
+            num_axes = 7
+        axis_names = ["J1", "J2", "J3", "J4", "J5", "J6", "J7"][:num_axes]
+        lines = []
+        for i in range(num_axes):
+            code_val = arr[i]
+            code_str = f"0x{code_val:04X}"
+            if code_val == 0:
+                desc = "No error"
             else:
-                num_axes = 7
-            axis_names = ["J1", "J2", "J3", "J4", "J5", "J6", "J7"][:num_axes]
-            lines = []
-            for i in range(num_axes):
-                code_val = arr[i]
-                code_str = f"0x{code_val:04X}"
-                if code_val == 0:
-                    desc = "No error"
-                else:
-                    desc = fault_code_dict_EN.get(code_str, "Unknown error")
-                lines.append(f"{axis_names[i]}: {code_str} - {desc}")
-            return ret, "\n".join(lines)
+                desc = fault_code_dict_EN.get(code_str, "Unknown error")
+            lines.append(f"{axis_names[i]}: {code_str} - {desc}")
+        return ret, "\n".join(lines)
 
     def reset_error(self, obj_type: int, timeout: int) -> tuple[int, int]:
         """Reset error states for the specified object.
@@ -1569,8 +1606,7 @@ class GentoRobot:
         @return: Tuple (return_code, system_error_code).
         """
         system_errorcode = c_uint(0)
-        with self._lock:
-            ret = self.dll.FX_L1_State_ResetError(obj_type, timeout, byref(system_errorcode))
+        ret = self.dll.FX_L1_State_ResetError(obj_type, timeout, byref(system_errorcode))
         return ret, system_errorcode.value
 
     def fbk_reset_user_data_set(self) -> None:
@@ -1578,8 +1614,7 @@ class GentoRobot:
 
         Clears all previously registered user data sets.
         """
-        with self._lock:
-            self.dll.FX_L1_Fbk_ResetUserDataSet()
+        self.dll.FX_L1_Fbk_ResetUserDataSet()
 
     def fbk_register_user_data_set(self, name: str, data_type: int, sub: int, data_num: int) -> int:
         """Register a user data set for feedback sampling.
@@ -1590,8 +1625,7 @@ class GentoRobot:
         @param data_num:  Number of data elements.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Fbk_RegisterUserDataSet(name.encode('utf-8'), data_type, sub, data_num)
+        return self.dll.FX_L1_Fbk_RegisterUserDataSet(name.encode('utf-8'), data_type, sub, data_num)
 
     def fbk_check_user_data_set(self, user_data_len: int) -> int:
         """Check the validity of user data set length.
@@ -1599,8 +1633,7 @@ class GentoRobot:
         @param user_data_len: Total length of user data in bytes to verify.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Fbk_CheckUserDataSet(user_data_len)
+        return self.dll.FX_L1_Fbk_CheckUserDataSet(user_data_len)
 
     def fbk_get_user_data(self, buffer) -> None:
         """Sample the user data from feedback into the provided buffer.
@@ -1608,8 +1641,26 @@ class GentoRobot:
         @param buffer: A ctypes buffer (e.g., created by create_string_buffer or cast)
                        large enough to hold the registered user data.
         """
-        with self._lock:
-            self.dll.FX_L1_Fbk_GetUserData(buffer)
+        self.dll.FX_L1_Fbk_GetUserData(buffer)
+
+    def fbk_reset_system_msg(self) -> int:
+        """Reset (clear) the system message buffer on the robot controller.
+
+        @return: 0 on success, negative error code otherwise.
+        """
+        return self.dll.FX_L1_Fbk_ResetSystemMsg()
+
+    def fbk_get_system_msg(self, max_msg_len: int = 256) -> tuple:
+        """Get the current system message from the robot controller.
+
+        @param max_msg_len: Maximum length of the message buffer (default 256).
+        @return: Tuple (return_code, message_string). On failure, message_string is empty.
+        """
+        buf = create_string_buffer(max_msg_len)
+        ret = self.dll.FX_L1_Fbk_GetSystemMsg(buf, max_msg_len)
+        if ret == 0:
+           return ret, ''
+        return ret, buf.value.decode('utf-8')
 
     # ==================== State switching ====================
     def switch_to_idle(self, obj_type: int, timeout: int) -> int:
@@ -1619,8 +1670,7 @@ class GentoRobot:
         @param timeout: Timeout in milliseconds.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToIdle(obj_type, timeout)
+        return self.dll.FX_L1_State_SwitchToIdle(obj_type, timeout)
 
     def switch_to_position_mode(self, obj_type: int, timeout: int, vel: float, acc: float) -> int:
         """Switch to position control mode.
@@ -1633,8 +1683,7 @@ class GentoRobot:
         """
         vel = max(1, min(vel, 100))
         acc = max(1, min(acc, 100))
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToPositionMode(obj_type, timeout, vel, acc)
+        return self.dll.FX_L1_State_SwitchToPositionMode(obj_type, timeout, vel, acc)
 
     def switch_to_imp_joint_mode(self, obj_type: int, timeout: int, vel: float, acc: float,
                                  k: List[float], d: List[float]) -> int:
@@ -1654,8 +1703,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToImpJointMode(obj_type, timeout, vel, acc, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToImpJointMode(obj_type, timeout, vel, acc, k_arr, d_arr)
 
     def switch_to_imp_cart_mode(self, obj_type: int, timeout: int, vel: float, acc: float,
                                 k: List[float], d: List[float]) -> int:
@@ -1675,8 +1723,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToImpCartMode(obj_type, timeout, vel, acc, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToImpCartMode(obj_type, timeout, vel, acc, k_arr, d_arr)
 
     def switch_to_pd_mode(self, obj_type: int, timeout: int,
                           vel_ratio: float, acc_ratio: float,
@@ -1697,9 +1744,8 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToPDMode(obj_type, timeout,
-                                                       vel_ratio, acc_ratio,
+        return self.dll.FX_L1_State_SwitchToPDMode(obj_type, timeout,
+                                                       vel, acc,
                                                        k_arr, d_arr)
 
     def switch_to_imp_force_mode(self, obj_type: int, timeout: int,
@@ -1715,8 +1761,7 @@ class GentoRobot:
         """
         f_arr = (c_double * 5)(*force_ctrl)
         t_arr = (c_double * 5)(*torque_ctrl)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToImpForceMode(obj_type, timeout, f_arr, t_arr)
+        return self.dll.FX_L1_State_SwitchToImpForceMode(obj_type, timeout, f_arr, t_arr)
 
     def switch_to_drag_joint(self, obj_type: int, timeout: int, k: List[float], d: List[float]) -> int:
         """Switch to joint-level drag (gravity compensation) mode.
@@ -1731,8 +1776,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToDragJoint(obj_type, timeout, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToDragJoint(obj_type, timeout, k_arr, d_arr)
 
     def switch_to_drag_cart_x(self, obj_type: int, timeout: int, k: List[float], d: List[float]) -> int:
         """Switch to Cartesian X-direction drag mode.
@@ -1747,8 +1791,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToDragCartX(obj_type, timeout, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToDragCartX(obj_type, timeout, k_arr, d_arr)
 
     def switch_to_drag_cart_y(self, obj_type: int, timeout: int, k: List[float], d: List[float]) -> int:
         """Switch to Cartesian Y-direction drag mode.
@@ -1763,8 +1806,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToDragCartY(obj_type, timeout, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToDragCartY(obj_type, timeout, k_arr, d_arr)
 
     def switch_to_drag_cart_z(self, obj_type: int, timeout: int, k: List[float], d: List[float]) -> int:
         """Switch to Cartesian Z-direction drag mode.
@@ -1779,8 +1821,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToDragCartZ(obj_type, timeout, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToDragCartZ(obj_type, timeout, k_arr, d_arr)
 
     def switch_to_drag_cart_r(self, obj_type: int, timeout: int, k: List[float], d: List[float]) -> int:
         """Switch to Cartesian rotational drag mode.
@@ -1795,8 +1836,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToDragCartR(obj_type, timeout, k_arr, d_arr)
+        return self.dll.FX_L1_State_SwitchToDragCartR(obj_type, timeout, k_arr, d_arr)
 
     def switch_to_collab_release(self, obj_type: int, timeout: int) -> int:
         """Switch to collaborative release mode (zero gravity, passive).
@@ -1805,8 +1845,7 @@ class GentoRobot:
         @param timeout: Timeout in milliseconds.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_State_SwitchToCollaborativeRelease(obj_type, timeout)
+        return self.dll.FX_L1_State_SwitchToCollaborativeRelease(obj_type, timeout)
 
     # ==================== Parameters ====================
     def param_set_int(self, name: str, value: int) -> int:
@@ -1816,8 +1855,7 @@ class GentoRobot:
         @param value: Integer value.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Param_SetInt32(name.encode('utf-8'), value)
+        return self.dll.FX_L1_Param_SetInt32(name.encode('utf-8'), value)
 
     def param_set_float(self, name: str, value: float) -> int:
         """Set a float parameter.
@@ -1826,8 +1864,7 @@ class GentoRobot:
         @param value: Float value.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Param_SetFloat(name.encode('utf-8'), value)
+        return self.dll.FX_L1_Param_SetFloat(name.encode('utf-8'), value)
 
     def param_get_int(self, name: str) -> tuple[int, int]:
         """Get an integer parameter.
@@ -1836,9 +1873,8 @@ class GentoRobot:
         @return: Tuple (return_code, integer value).
         """
         ret_value = c_int32()
-        with self._lock:
-            ret = self.dll.FX_L1_Param_GetInt32(name.encode('utf-8'), byref(ret_value))
-            return ret, ret_value.value
+        ret = self.dll.FX_L1_Param_GetInt32(name.encode('utf-8'), byref(ret_value))
+        return ret, ret_value.value
 
     def param_get_float(self, name: str) -> tuple[int, float]:
         """Get a float parameter.
@@ -1847,9 +1883,8 @@ class GentoRobot:
         @return: Tuple (return_code, float value).
         """
         ret_value = c_float()
-        with self._lock:
-            ret = self.dll.FX_L1_Param_GetFloat(name.encode('utf-8'), byref(ret_value))
-            return ret, ret_value.value
+        ret = self.dll.FX_L1_Param_GetFloat(name.encode('utf-8'), byref(ret_value))
+        return ret, ret_value.value
 
     def param_get_string(self, name: str, max_len: int = 256) -> tuple[int, str]:
         """Get a string parameter.
@@ -1858,13 +1893,12 @@ class GentoRobot:
         @return: Tuple (return_code, string).
         """
         buf = create_string_buffer(max_len)
-        with self._lock:
-            ret = self.dll.FX_L1_Param_GetString(
-                name.encode('utf-8'),
-                buf
-            )
-            value = buf.value.decode('utf-8')
-            return ret, value
+        ret = self.dll.FX_L1_Param_GetString(
+            name.encode('utf-8'),
+            buf
+        )
+        value = buf.value.decode('utf-8')
+        return ret, value
 
     # ==================== Terminal ====================
     def terminal_clear(self, terminal_type: int) -> int:
@@ -1873,8 +1907,7 @@ class GentoRobot:
         @param terminal_type: Terminal type (FXTerminalType).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Terminal_ClearData(terminal_type)
+        return self.dll.FX_L1_Terminal_ClearData(terminal_type)
 
     def terminal_get(self, terminal_type: int, timeout: int = 1000) -> Tuple[int, bytes, int]:
         """Read data from the terminal.
@@ -1886,8 +1919,7 @@ class GentoRobot:
         output_chn = c_int32()
         data = (c_ubyte * 64)()
         recv_time = c_uint32()
-        with self._lock:
-            n = self.dll.FX_L1_Terminal_GetData(terminal_type, timeout, byref(output_chn), data, byref(recv_time))
+        n = self.dll.FX_L1_Terminal_GetData(terminal_type, timeout, byref(output_chn), data, byref(recv_time))
         if n <= 0:
             return (0, b'', 0)
         return (output_chn.value, bytes(data[:n]), recv_time.value)
@@ -1914,8 +1946,7 @@ class GentoRobot:
             raise ValueError("Data too long (max 64 bytes)")
         buf = (c_ubyte * data_len)(*data)
         send_time = c_uint32()
-        with self._lock:
-            ret = self.dll.FX_L1_Terminal_SetData(terminal_type, chn_type, timeout, buf, data_len, byref(send_time))
+        ret = self.dll.FX_L1_Terminal_SetData(terminal_type, chn_type, timeout, buf, data_len, byref(send_time))
         return (ret, send_time.value)
 
     # ==================== Configuration ====================
@@ -1926,8 +1957,7 @@ class GentoRobot:
         @param axis_mask: Bitmask of axes.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_SetBrakeLock(obj_type, axis_mask & 0xFF)
+        return self.dll.FX_L1_Config_SetBrakeLock(obj_type, axis_mask & 0xFF)
 
     def config_brake_unlock(self, obj_type: int, axis_mask: int) -> int:
         """Unlock brakes for selected axes.
@@ -1936,8 +1966,7 @@ class GentoRobot:
         @param axis_mask: Bitmask of axes to unlock (only lower 8 bits used).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_SetBrakeUnlock(obj_type, axis_mask & 0xFF)
+        return self.dll.FX_L1_Config_SetBrakeUnlock(obj_type, axis_mask & 0xFF)
 
     def config_reset_enc_offset(self, obj_type: int, axis_mask: int) -> int:
         """Reset encoder offsets for selected axes.
@@ -1946,8 +1975,7 @@ class GentoRobot:
         @param axis_mask: Bitmask of axes to reset (only lower 8 bits used).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_ResetEncOffset(obj_type, axis_mask & 0xFF)
+        return self.dll.FX_L1_Config_ResetEncOffset(obj_type, axis_mask & 0xFF)
 
     def config_clear_enc_error(self, obj_type: int, axis_mask: int) -> int:
         """Clear encoder errors for selected axes.
@@ -1956,8 +1984,7 @@ class GentoRobot:
         @param axis_mask: Bitmask of axes to clear (only lower 8 bits used).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_ClearEncError(obj_type, axis_mask & 0xFF)
+        return self.dll.FX_L1_Config_ClearEncError(obj_type, axis_mask & 0xFF)
 
     def config_disable_soft_limit(self, obj_type: int, axis_mask: int) -> int:
         """Disable software limits for selected axes.
@@ -1966,8 +1993,7 @@ class GentoRobot:
         @param axis_mask: Bitmask of axes to disable limits for (only lower 8 bits used).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_DisableSoftLimit(obj_type, axis_mask & 0xFF)
+        return self.dll.FX_L1_Config_DisableSoftLimit(obj_type, axis_mask & 0xFF)
 
     def config_clear_axis_sensor_offset(self, obj_type: int, axis_id: int) -> int:
         """Clear sensor offset for a single axis.
@@ -1976,8 +2002,7 @@ class GentoRobot:
         @param axis_id: Axis index (0‑based).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_ResetAxisSensorOffset(obj_type, axis_id)
+        return self.dll.FX_L1_Config_ResetAxisSensorOffset(obj_type, axis_id)
 
     def config_clear_sensor_offset(self, obj_type: int) -> int:
         """Clear all sensor offsets for the object.
@@ -1985,8 +2010,7 @@ class GentoRobot:
         @param obj_type: Object type (FXObjType).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_ResetSensorOffset(obj_type)
+        return self.dll.FX_L1_Config_ResetSensorOffset(obj_type)
 
     def config_set_traj(self, obj_type: int, point_set, point_num: int) -> int:
         """Set trajectory points for the object.
@@ -1996,8 +2020,7 @@ class GentoRobot:
         @param point_num: Number of points.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Config_SetTraj(obj_type, point_num, point_set)
+        return self.dll.FX_L1_Config_SetTraj(obj_type, point_num, point_set)
 
     def config_set_pd_cmd_cycle_time(self, cycle_time: int) -> int:
         """Set the command cycle time for PD control.
@@ -2007,8 +2030,7 @@ class GentoRobot:
         """
         if cycle_time < 0:
             raise ValueError("cycle_time must be positive")
-        with self._lock:
-            return self.dll.FX_L1_Config_SetPDCmdCycleTime(cycle_time)
+        return self.dll.FX_L1_Config_SetPDCmdCycleTime(cycle_time)
 
     # ==================== Runtime commands ====================
     def emergency_stop(self, obj_mask: int) -> int:
@@ -2017,8 +2039,7 @@ class GentoRobot:
         @param obj_mask: Bitmask (FXObjMask).
         @return: bitmask (FXObjMask).
         """
-        with self._lock:
-            return self.dll.FX_L1_Runtime_EmergencyStop(self._thread_id, obj_mask)
+        return self.dll.FX_L1_Runtime_EmergencyStop(self._thread_id, obj_mask)
 
     def runtime_set_tag(self, obj_type: int, tag: int) -> int:
         """Set a user-defined tag on the specified object.
@@ -2027,8 +2048,7 @@ class GentoRobot:
         @param tag: User-defined tag value.
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetTag(self._thread_id, obj_type, tag)
+        return self.dll.FX_L1_Runtime_SetTag(self._thread_id, obj_type, tag)
 
     def runtime_set_joint_pos_cmd(self, obj_type: int, positions: List[float]) -> int:
         """Send a joint position command to the specified object.
@@ -2053,8 +2073,7 @@ class GentoRobot:
             raise ValueError(f"Expected {expected} positions for object type {obj_type}, got {len(positions)}")
         padded = list(positions) + [0.0] * (7 - expected)
         arr = (c_double * 7)(*padded)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetJointPosCmd(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetJointPosCmd(self._thread_id, obj_type, arr)
 
     def runtime_set_joint_pos_pd_cmd(self, obj_type: int, positions: List[float]) -> int:
         """Send a joint position command in PD control mode.
@@ -2067,8 +2086,7 @@ class GentoRobot:
         if len(positions) != 7:
             raise ValueError(f"PD position command requires 7 elements, got {len(positions)}")
         arr = (c_double * 7)(*positions)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetJointPosPDCmd(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetJointPosPDCmd(self._thread_id, obj_type, arr)
 
     def runtime_set_force_ctrl(self, obj_type: int, force_ctrl: List[float]) -> int:
         """Set force control parameters for impedance force mode.
@@ -2081,8 +2099,7 @@ class GentoRobot:
         if len(force_ctrl) != 5:
             raise ValueError("force_ctrl must have 5 elements")
         arr = (c_double * 5)(*force_ctrl)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetForceCtrl(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetForceCtrl(self._thread_id, obj_type, arr)
 
     def runtime_set_torque_ctrl(self, obj_type: int, torque_ctrl: List[float]) -> int:
         """Set torque control parameters for impedance force mode.
@@ -2095,8 +2112,7 @@ class GentoRobot:
         if len(torque_ctrl) != 5:
             raise ValueError("torque_ctrl must have 5 elements")
         arr = (c_double * 5)(*torque_ctrl)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetTorqueCtrl(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetTorqueCtrl(self._thread_id, obj_type, arr)
 
     def runtime_set_vel_ratio(self, obj_type: int, ratio: float) -> int:
         """Set the velocity scaling ratio for motion commands.
@@ -2106,8 +2122,7 @@ class GentoRobot:
         @return: 0 on success, negative error code otherwise.
         """
         ratio = max(1, min(ratio, 100))
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetVelRatio(self._thread_id, obj_type, ratio)
+        return self.dll.FX_L1_Runtime_SetVelRatio(self._thread_id, obj_type, ratio)
 
     def runtime_set_acc_ratio(self, obj_type: int, ratio: float) -> int:
         """Set the acceleration scaling ratio for motion commands.
@@ -2117,8 +2132,7 @@ class GentoRobot:
         @return: 0 on success, negative error code otherwise.
         """
         ratio = max(1, min(ratio, 100))
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetAccRatio(self._thread_id, obj_type, ratio)
+        return self.dll.FX_L1_Runtime_SetAccRatio(self._thread_id, obj_type, ratio)
 
     def runtime_set_speed_ratio(self, obj_type: int, vel_ratio: float, acc_ratio: float) -> int:
         """Set both velocity and acceleration scaling ratios.
@@ -2130,8 +2144,7 @@ class GentoRobot:
         """
         vel_ratio = max(1, min(vel_ratio, 100))
         acc_ratio = max(1, min(acc_ratio, 100))
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetSpeedRatio(self._thread_id, obj_type, vel_ratio, acc_ratio)
+        return self.dll.FX_L1_Runtime_SetSpeedRatio(self._thread_id, obj_type, vel_ratio, acc_ratio)
 
     def runtime_set_joint_k(self, obj_type: int, k: List[float]) -> int:
         """Set joint‑space stiffness coefficients for impedance control.
@@ -2145,8 +2158,7 @@ class GentoRobot:
             raise ValueError("k must have 7 elements")
         k = [max(0, v) for v in k]
         arr = (c_double * 7)(*k)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetJointK(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetJointK(self._thread_id, obj_type, arr)
 
     def runtime_set_joint_d(self, obj_type: int, d: List[float]) -> int:
         """Set joint‑space damping coefficients for impedance control.
@@ -2160,8 +2172,7 @@ class GentoRobot:
             raise ValueError("d must have 7 elements")
         d = [max(0, v) for v in d]
         arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetJointD(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetJointD(self._thread_id, obj_type, arr)
 
     def runtime_set_joint_kd(self, obj_type: int, k: List[float], d: List[float]) -> int:
         """Set both joint‑space stiffness and damping coefficients.
@@ -2175,8 +2186,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetJointKD(self._thread_id, obj_type, k_arr, d_arr)
+        return self.dll.FX_L1_Runtime_SetJointKD(self._thread_id, obj_type, k_arr, d_arr)
 
     def runtime_set_cart_k(self, obj_type: int, k: List[float]) -> int:
         """Set Cartesian‑space stiffness coefficients for impedance control.
@@ -2190,8 +2200,7 @@ class GentoRobot:
             raise ValueError("k must have 7 elements")
         k = [max(0, v) for v in k]
         arr = (c_double * 7)(*k)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetCartK(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetCartK(self._thread_id, obj_type, arr)
 
     def runtime_set_cart_d(self, obj_type: int, d: List[float]) -> int:
         """Set Cartesian‑space damping coefficients for impedance control.
@@ -2205,8 +2214,7 @@ class GentoRobot:
             raise ValueError("d must have 7 elements")
         d = [max(0, v) for v in d]
         arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetCartD(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetCartD(self._thread_id, obj_type, arr)
 
     def runtime_set_cart_kd(self, obj_type: int, k: List[float], d: List[float]) -> int:
         """Set both Cartesian‑space stiffness and damping coefficients.
@@ -2220,8 +2228,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         k_arr = (c_double * 7)(*k)
         d_arr = (c_double * 7)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetCartKD(self._thread_id, obj_type, k_arr, d_arr)
+        return self.dll.FX_L1_Runtime_SetCartKD(self._thread_id, obj_type, k_arr, d_arr)
 
     def runtime_set_tool_k(self, obj_type: int, k: List[float]) -> int:
         """Set tool kinematics (offset from flange to TCP).
@@ -2234,8 +2241,7 @@ class GentoRobot:
         if len(k) != 6:
             raise ValueError("kinematics must have 6 elements (tool offset)")
         arr = (c_double * 6)(*k)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetToolK(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetToolK(self._thread_id, obj_type, arr)
 
     def runtime_set_tool_d(self, obj_type: int, d: List[float]) -> int:
         """Set tool dynamics parameters.
@@ -2248,8 +2254,7 @@ class GentoRobot:
         if len(d) != 10:
             raise ValueError("dynamics must have 10 elements (tool dynamics)")
         arr = (c_double * 10)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetToolD(self._thread_id, obj_type, arr)
+        return self.dll.FX_L1_Runtime_SetToolD(self._thread_id, obj_type, arr)
 
     def runtime_set_tool_kd(self, obj_type: int, k: List[float], d: List[float]) -> int:
         """Set both tool kinematics and dynamics in one call.
@@ -2266,8 +2271,7 @@ class GentoRobot:
             raise ValueError("dynamics must have 10 elements (tool dynamics)")
         k_arr = (c_double * 6)(*k)
         d_arr = (c_double * 10)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetToolKD(self._thread_id, obj_type, k_arr, d_arr)
+        return self.dll.FX_L1_Runtime_SetToolKD(self._thread_id, obj_type, k_arr, d_arr)
 
     def runtime_set_body_pdp(self, p: List[float]) -> int:
         """Set body proportional (P) gains.
@@ -2280,8 +2284,7 @@ class GentoRobot:
             raise ValueError("p must have 6 elements")
         p = [max(0, v) for v in p]
         arr = (c_double * 6)(*p)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetBodyPDP(self._thread_id, arr)
+        return self.dll.FX_L1_Runtime_SetBodyPDP(self._thread_id, arr)
 
     def runtime_set_body_pdd(self, d: List[float]) -> int:
         """Set body derivative (D) gains.
@@ -2294,8 +2297,7 @@ class GentoRobot:
             raise ValueError("d must have 6 elements")
         d = [max(0, v) for v in d]
         arr = (c_double * 6)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetBodyPDD(self._thread_id, arr)
+        return self.dll.FX_L1_Runtime_SetBodyPDD(self._thread_id, arr)
 
     def runtime_set_body_pd(self, p: List[float], d: List[float]) -> int:
         """Set both body proportional and derivative gains.
@@ -2311,8 +2313,7 @@ class GentoRobot:
         d = [max(0, v) for v in d]
         p_arr = (c_double * 6)(*p)
         d_arr = (c_double * 6)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetBodyPD(self._thread_id, p_arr, d_arr)
+        return self.dll.FX_L1_Runtime_SetBodyPD(self._thread_id, p_arr, d_arr)
 
     def runtime_run_traj(self, obj_mask: int) -> int:
         """Start trajectory execution for the objects specified by the mask.
@@ -2320,8 +2321,7 @@ class GentoRobot:
         @param obj_mask: Bitmask of objects (FXObjMask).
         @return: bitmask (FXObjMask) of objects that successfully started trajectory execution.
         """
-        with self._lock:
-            return self.dll.FX_L1_Runtime_RunTraj(self._thread_id, obj_mask)
+        return self.dll.FX_L1_Runtime_RunTraj(self._thread_id, obj_mask)
 
     def runtime_stop_traj(self, obj_mask: int) -> int:
         """Stop trajectory execution for the objects specified by the mask.
@@ -2329,8 +2329,7 @@ class GentoRobot:
         @param obj_mask: Bitmask of objects (FXObjMask).
         @return: bitmask (FXObjMask) of objects that successfully stopped trajectory execution.
         """
-        with self._lock:
-            return self.dll.FX_L1_Runtime_StopTraj(self._thread_id, obj_mask)
+        return self.dll.FX_L1_Runtime_StopTraj(self._thread_id, obj_mask)
 
     def runtime_set_hand_action(self, hand_type: int, hand_action: int) -> int:
         """Set the runtime action command for the specified hand.
@@ -2339,8 +2338,7 @@ class GentoRobot:
         @param hand_action: Action to be applied (FXHandAction).
         @return: 0 on success, negative error code otherwise.
         """
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetHandAction(self._thread_id, hand_type, hand_action)
+        return self.dll.FX_L1_Runtime_SetHandAction(self._thread_id, hand_type, hand_action)
 
     def runtime_set_hand_pos(self, hand_type: int, pos: List[int]) -> int:
         """Set the target position ratio command for the specified hand.
@@ -2353,8 +2351,7 @@ class GentoRobot:
         if len(pos) != 24:
             raise ValueError("pos must have 24 elements")
         arr = (c_int * 24)(*pos)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetHandPos(self._thread_id, hand_type, arr)
+        return self.dll.FX_L1_Runtime_SetHandPos(self._thread_id, hand_type, arr)
 
     def runtime_set_hand_p(self, hand_type: int, p: List[int]) -> int:
         """Set the proportional gain (P) for the specified hand.
@@ -2367,8 +2364,7 @@ class GentoRobot:
         if len(p) != 24:
             raise ValueError("p must have 24 elements")
         arr = (c_int * 24)(*p)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetHandP(self._thread_id, hand_type, arr)
+        return self.dll.FX_L1_Runtime_SetHandP(self._thread_id, hand_type, arr)
 
     def runtime_set_hand_d(self, hand_type: int, d: List[int]) -> int:
         """Set the derivative gain (D) for the specified hand.
@@ -2381,8 +2377,7 @@ class GentoRobot:
         if len(d) != 24:
             raise ValueError("d must have 24 elements")
         arr = (c_int * 24)(*d)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetHandD(self._thread_id, hand_type, arr)
+        return self.dll.FX_L1_Runtime_SetHandD(self._thread_id, hand_type, arr)
 
     def runtime_set_hand_max_tor(self, hand_type: int, max_tor: List[int]) -> int:
         """Set the maximum torque limit for the specified hand.
@@ -2395,8 +2390,7 @@ class GentoRobot:
         if len(max_tor) != 24:
             raise ValueError("max_tor must have 24 elements")
         arr = (c_int * 24)(*max_tor)
-        with self._lock:
-            return self.dll.FX_L1_Runtime_SetHandMaxTor(self._thread_id, hand_type, arr)
+        return self.dll.FX_L1_Runtime_SetHandMaxTor(self._thread_id, hand_type, arr)
 
     # ==================== Kinematics ====================
     # ---------- Private handle management ----------
@@ -2419,8 +2413,7 @@ class GentoRobot:
 
          @param log_level: Log mask (FXLogMask).
          """
-        with self._lock:
-            self.dll.FX_L1_Kinematics_SetLogLevel(log_level)
+        self.dll.FX_L1_Kinematics_SetLogLevel(log_level)
 
     def init_single_arm_manual(self, robot_serial: int, robot_type: int,
                                DH: List[List[float]],
@@ -2474,12 +2467,11 @@ class GentoRobot:
         for i in range(7):
             for j in range(6):
                 i_arr[i][j] = I[i][j]
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_InitSingleArm_ByInputParams(
-                self._kin_handle, robot_serial,
-                byref(type_var), dh_arr, pnva_arr, bound_arr,
-                grv_arr, mass_arr, mcp_arr, i_arr
-            )
+        return self.dll.FX_L1_Kinematics_InitSingleArm_ByInputParams(
+            self._kin_handle, robot_serial,
+            byref(type_var), dh_arr, pnva_arr, bound_arr,
+            grv_arr, mass_arr, mcp_arr, i_arr
+        )
 
     def init_single_arm_config(self, robot_serial: int) -> int:
         """Initialize kinematics for a single arm using configuration file.
@@ -2488,9 +2480,8 @@ class GentoRobot:
        @return: 0 on success, negative error code otherwise.
        """
         self._ensure_kin_handle()
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_InitSingleArm_ByIniConfig(
-                self._kin_handle, robot_serial)
+        return self.dll.FX_L1_Kinematics_InitSingleArm_ByIniConfig(
+            self._kin_handle, robot_serial)
 
     # ---------- tools ----------
     def set_tool(self, arm_idx: int,
@@ -2517,8 +2508,7 @@ class GentoRobot:
         if len(tool_list) != 16:
             raise ValueError("tool_matrix must have exactly 16 elements (when flattened) or be a 4x4 nested list")
         tool_array = (c_double * 16)(*tool_list)
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_SetTool(self._kin_handle, arm_idx, tool_array)
+        return self.dll.FX_L1_Kinematics_SetTool(self._kin_handle, arm_idx, tool_array)
 
     def remove_tool(self, arm_idx: int) -> int:
         """Remove the tool transformation from the specified arm.
@@ -2527,8 +2517,7 @@ class GentoRobot:
         @return: 0 on success, negative error code otherwise.
         """
         self._ensure_kin_handle()
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_RemoveTool(self._kin_handle, arm_idx)
+        return self.dll.FX_L1_Kinematics_RemoveTool(self._kin_handle, arm_idx)
 
     # ---------- Forward kinematics ----------
     def convert_to_8x8_matrix(self, flat_list: List[float]) -> List[List[float]]:
@@ -2615,13 +2604,12 @@ class GentoRobot:
         self._ensure_kin_handle()
         j_arr = (c_double * 7)(*joints)
         pose_arr = (c_double * 16)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_ForwardKinematics(self._kin_handle, arm_idx, j_arr, pose_arr)
-            if ret == 0:
-                matrix = [[pose_arr[i * 4 + j] for j in range(4)] for i in range(4)]
-                return matrix
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_ForwardKinematics(self._kin_handle, arm_idx, j_arr, pose_arr)
+        if ret == 0:
+            matrix = [[pose_arr[i * 4 + j] for j in range(4)] for i in range(4)]
+            return matrix
+        else:
+            return ret
 
     # ---------- Jacobian ----------
     def jacobian(self, arm_idx: int, joints: List[float]) -> Optional[List[List[float]]]:
@@ -2640,14 +2628,12 @@ class GentoRobot:
             raise ValueError("joints must have 7 elements")
         self._ensure_kin_handle()
         j_arr = (c_double * 7)(*joints)
-        jac_arr = (c_double * 42)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_Jacobian(self._kin_handle, arm_idx, j_arr, jac_arr)
-            if ret == 0:
-                jacobian = [[jac_arr[i * 7 + j] for j in range(7)] for i in range(6)]
-                return jacobian
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_Jacobian(self._kin_handle, arm_idx, j_arr, jac_arr)
+        if ret == 0:
+            jacobian = [[jac_arr[i * 7 + j] for j in range(7)] for i in range(6)]
+            return jacobian
+        else:
+            return ret
 
     # ---------- Inverse kinematics ----------
     def inverse_kinematics(self, arm_idx: int, ik_structure_params: FX_InvKineSolverParams) -> Optional[
@@ -2662,12 +2648,11 @@ class GentoRobot:
         @return: The same structure with output fields populated (solutions), or None if IK fails.
         """
         self._ensure_kin_handle()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_InverseKinematics(self._kin_handle, arm_idx, byref(ik_structure_params))
-            if ret == 0:
-                return ik_structure_params
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_InverseKinematics(self._kin_handle, arm_idx, byref(ik_structure_params))
+        if ret == 0:
+            return ik_structure_params
+        else:
+            return ret
 
     # ---------- Body kinematics ----------
     def set_skye_body_condition(self,
@@ -2693,11 +2678,10 @@ class GentoRobot:
         self._ensure_kin_handle()
         std_arr = (c_double * 3)(*std_body)
         k_arr = (c_double * 3)(*k_body)
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_SetSkyeBodyCondition(
-                self._kin_handle, std_arr, k_arr,
-                std_left_len, k_left, std_right_len, k_right
-            )
+        return self.dll.FX_L1_Kinematics_SetSkyeBodyCondition(
+            self._kin_handle, std_arr, k_arr,
+            std_left_len, k_left, std_right_len, k_right
+        )
 
     def skye_body_forward_kinematics(self, body_joints: List[float]) -> Union[
         Tuple[List[List[float]], List[List[float]]], int]:
@@ -2718,14 +2702,13 @@ class GentoRobot:
         j_arr = (c_double * 3)(*body_joints)
         left_pose = (c_double * 16)()
         right_pose = (c_double * 16)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_SkyeBodyForwardKinematics(self._kin_handle, j_arr, left_pose, right_pose)
-            if ret == 0:
-                left_mat = [[left_pose[i * 4 + j] for j in range(4)] for i in range(4)]
-                right_mat = [[right_pose[i * 4 + j] for j in range(4)] for i in range(4)]
-                return (left_mat, right_mat)
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_SkyeBodyForwardKinematics(self._kin_handle, j_arr, left_pose, right_pose)
+        if ret == 0:
+            left_mat = [[left_pose[i * 4 + j] for j in range(4)] for i in range(4)]
+            right_mat = [[right_pose[i * 4 + j] for j in range(4)] for i in range(4)]
+            return (left_mat, right_mat)
+        else:
+            return ret
 
     def skye_body_inverse_kinematics(self, left_tcp: List[float], right_tcp: List[float]) -> Union[List[float], int]:
         """Compute body joint values from dual-arm TCP positions.
@@ -2745,13 +2728,12 @@ class GentoRobot:
         left_arr = (c_double * 3)(*left_tcp)
         right_arr = (c_double * 3)(*right_tcp)
         body_joints = (c_double * 3)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_SkyeBodyInverseKinematics(self._kin_handle, left_arr, right_arr,
-                                                                      body_joints)
-            if ret == 0:
-                return [body_joints[i] for i in range(3)]
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_SkyeBodyInverseKinematics(self._kin_handle, left_arr, right_arr,
+                                                                    body_joints)
+        if ret == 0:
+            return [body_joints[i] for i in range(3)]
+        else:
+            return ret
 
     def skye_body_inverse_kinematics_with_ref(self, ref_body_joints: List[float],
                                               left_tcp: List[float], right_tcp: List[float]) -> Union[List[float], int]:
@@ -2774,14 +2756,13 @@ class GentoRobot:
         left_arr = (c_double * 3)(*left_tcp)
         right_arr = (c_double * 3)(*right_tcp)
         body_joints = (c_double * 3)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_SkyeBodyInverseKinematicsWithRef(
-                self._kin_handle, ref_arr, left_arr, right_arr, body_joints
-            )
-            if ret == 0:
-                return [body_joints[i] for i in range(3)]
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_SkyeBodyInverseKinematicsWithRef(
+            self._kin_handle, ref_arr, left_arr, right_arr, body_joints
+        )
+        if ret == 0:
+            return [body_joints[i] for i in range(3)]
+        else:
+            return ret
 
     # ---------- Motion planning ----------
     def plan_joints(self, arm_idx: int,
@@ -2810,12 +2791,11 @@ class GentoRobot:
         total_doubles = self.max_point * 7
         point_set = (c_double * total_doubles)()
         num = c_int(0)
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_PlanJointMove(
-                self._kin_handle, arm_idx, start_arr, end_arr,
-                c_double(vel), c_double(acc), c_int(freq),
-                point_set, byref(num)
-            )
+        ret = self.dll.FX_L1_Kinematics_PlanJointMove(
+            self._kin_handle, arm_idx, start_arr, end_arr,
+            c_double(vel), c_double(acc), c_int(freq),
+            point_set, byref(num)
+        )
         if ret == 0:
             return point_set, num.value
         else:
@@ -2855,17 +2835,16 @@ class GentoRobot:
         point_set = (c_double * total_doubles)()
         num = c_int(0)
 
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_PlanLinearMove(
-                self._kin_handle, arm_idx,
-                start_arr, end_arr, ref_arr,
-                c_double(vel), c_double(acc), c_int(freq),
-                point_set, byref(num)
-            )
-            if ret == 0:
-                return point_set, num.value
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_PlanLinearMove(
+            self._kin_handle, arm_idx,
+            start_arr, end_arr, ref_arr,
+            c_double(vel), c_double(acc), c_int(freq),
+            point_set, byref(num)
+        )
+        if ret == 0:
+            return point_set, num.value
+        else:
+            return ret
 
     def plan_linear_keep_joints(self, arm_idx: int,
                                 start_joints: List[float], end_joints: List[float],
@@ -2895,16 +2874,16 @@ class GentoRobot:
         total_doubles = self.max_point * 7
         point_set = (c_double * total_doubles)()
         num = c_int(0)
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_PlanLinearMoveKeepJoints(
-                self._kin_handle, arm_idx, start_arr, end_arr,
-                c_double(vel), c_double(acc), c_int(freq),
-                point_set, byref(num)
-            )
-            if ret == 0:
-                return point_set, num.value
-            else:
-                return ret
+
+        ret = self.dll.FX_L1_Kinematics_PlanLinearMoveKeepJoints(
+            self._kin_handle, arm_idx, start_arr, end_arr,
+            c_double(vel), c_double(acc), c_int(freq),
+            point_set, byref(num)
+        )
+        if ret == 0:
+            return point_set, num.value
+        else:
+            return ret
 
     # Multi-segment linear motion planning
     def plan_linear_multi_points_set_start(self, arm_idx: int,
@@ -2947,13 +2926,12 @@ class GentoRobot:
         end_arr = (c_double * 6)(*end_xyzabc)
         zsp_arr = (c_double * 6)(*zsp_para)
 
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_SetStart(
-                self._kin_handle, arm_idx,
-                ref_arr, start_arr, end_arr,
-                c_double(allow_range), c_int32(zsp_type), zsp_arr,
-                c_double(vel), c_double(acc), c_int32(freq)
-            )
+        return self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_SetStart(
+            self._kin_handle, arm_idx,
+            ref_arr, start_arr, end_arr,
+            c_double(allow_range), c_int32(zsp_type), zsp_arr,
+            c_double(vel), c_double(acc), c_int32(freq)
+        )
 
     def plan_linear_multi_points_set_next(self, arm_idx: int,
                                           next_xyzabc: List[float],
@@ -2980,12 +2958,11 @@ class GentoRobot:
         self._ensure_kin_handle()
         next_arr = (c_double * 6)(*next_xyzabc)
         zsp_arr = (c_double * 6)(*zsp_para)
-        with self._lock:
-            return self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_SetNextPoints(
-                self._kin_handle, arm_idx, next_arr,
-                c_double(allow_range), c_int32(zsp_type), zsp_arr,
-                c_double(vel), c_double(acc)
-            )
+        return self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_SetNextPoints(
+            self._kin_handle, arm_idx, next_arr,
+            c_double(allow_range), c_int32(zsp_type), zsp_arr,
+            c_double(vel), c_double(acc)
+        )
 
     def plan_linear_multi_points_get_points(self) -> Union[Tuple[ctypes.Array, int], int]:
         """Retrieve the generated trajectory points from the multi‑segment planner.
@@ -3004,14 +2981,13 @@ class GentoRobot:
         total_doubles = self.max_point * 7
         point_set = (c_double * total_doubles)()
         num = c_int(0)
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_GetPoints(
-                self._kin_handle, point_set, byref(num)
-            )
-            if ret == 0:
-                return point_set, num.value
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_PlanLinearMove_MultiPoints_GetPoints(
+            self._kin_handle, point_set, byref(num)
+        )
+        if ret == 0:
+            return point_set, num.value
+        else:
+            return ret
 
     def plan_linear_synchronous(self, arms_structure_params: ArmsSynchronousPlanningParams) -> Union[
         Tuple[ctypes.Array, ctypes.Array, int], int]:
@@ -3034,13 +3010,12 @@ class GentoRobot:
         arm0_point_set = (c_double * total_doubles)()
         arm1_point_set = (c_double * total_doubles)()
         num = c_int(0)
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_ArmsSynchronousPlanning(
-                self._kin_handle, byref(arms_structure_params), arm0_point_set, arm1_point_set, byref(num))
-            if ret == 0:
-                return arm0_point_set, arm1_point_set, num.value
-            else:
-                return ret
+        ret = self.dll.FX_L1_Kinematics_ArmsSynchronousPlanning(
+            self._kin_handle, byref(arms_structure_params), arm0_point_set, arm1_point_set, byref(num))
+        if ret == 0:
+            return arm0_point_set, arm1_point_set, num.value
+        else:
+            return ret
 
     def dynamics_identification(self, robot_type: int, file_path: str) -> Union[List[float], int]:
         """Identify dynamic parameters from a sampled data file.
@@ -3058,10 +3033,9 @@ class GentoRobot:
         mass = c_double()
         mr = (c_double * 3)()
         inertia = (c_double * 6)()
-        with self._lock:
-            ret = self.dll.FX_L1_Kinematics_DynamicsIdentification(
-                robot_type, file_path.encode('utf-8'), byref(mass), byref(mr), byref(inertia)
-            )
+        ret = self.dll.FX_L1_Kinematics_DynamicsIdentification(
+            robot_type, file_path.encode('utf-8'), byref(mass), byref(mr), byref(inertia)
+        )
         if ret == 0:
             dyn_para = []
             m_val = mass.value
@@ -3092,8 +3066,7 @@ class GentoRobot:
             raise ValueError("xyzabc must have 6 elements")
         arr_in = (c_double * 6)(*xyzabc)
         arr_out = (c_double * 16)()
-        with self._lock:
-            self.dll.FX_L1_XYZABC2Matrix(arr_in, arr_out)
+        self.dll.FX_L1_XYZABC2Matrix(arr_in, arr_out)
         matrix = [[arr_out[i * 4 + j] for j in range(4)] for i in range(4)]
         return matrix
 
@@ -3121,8 +3094,7 @@ class GentoRobot:
             raise ValueError("matrix must have 16 elements")
         arr_in = (c_double * 16)(*mat16)
         arr_out = (c_double * 6)()
-        with self._lock:
-            self.dll.FX_L1_Matrix2XYZABC(arr_in, arr_out)
+        self.dll.FX_L1_Matrix2XYZABC(arr_in, arr_out)
         return [arr_out[i] for i in range(6)]
 
     def check_sequences_approx_equal(self, seq1, seq2, tolerance=0.1, expected_len=None):
@@ -3218,7 +3190,6 @@ class RobotDataManager:
         self._latest_rt = None
         self._latest_sg = None
         self._running = True
-        self._lock = threading.Lock()
         self._rt_thread = threading.Thread(target=self._fetch_rt, daemon=True)
         self._sg_thread = threading.Thread(target=self._fetch_sg, daemon=True)
         self._rt_thread.start()
@@ -3229,11 +3200,9 @@ class RobotDataManager:
         while self._running:
             try:
                 data = self.robot.get_rt_dict()
-                with self._lock:
-                    self._latest_rt = data
+                self._latest_rt = data
             except:
-                with self._lock:
-                    self._latest_rt = None
+                self._latest_rt = None
             time.sleep(0.001)
 
     def _fetch_sg(self):
@@ -3241,24 +3210,20 @@ class RobotDataManager:
         while self._running:
             try:
                 data = self.robot.get_sg_dict()
-                with self._lock:
-                    self._latest_sg = data
+                self._latest_sg = data
             except:
-                with self._lock:
-                    self._latest_sg = None
+                self._latest_sg = None
             time.sleep(0.002)
 
     @property
     def latest_rt(self):
         """Get the latest real-time data dictionary (thread-safe)."""
-        with self._lock:
-            return self._latest_rt
+        return self._latest_rt
 
     @property
     def latest_sg(self):
         """Get the latest static data dictionary (thread-safe)."""
-        with self._lock:
-            return self._latest_sg
+        return self._latest_sg
 
     def stop(self):
         """Stop the background threads."""

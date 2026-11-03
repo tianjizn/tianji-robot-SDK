@@ -19,12 +19,32 @@ void FX_L0_System_LocalLogOff(void)
     RobotCtrl::OnLocalLogOff();
 }
 
+int FX_L0_System_SetSystemTime(int year, int month, int day, int hour, int minute, int second)
+{
+    return ((RobotCtrl::System_SetSystemTime(year, month, day, hour, minute, second) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_System_GetSystemTime(char time_str[20])
+{
+    return ((RobotCtrl::System_GetSystemTime(time_str) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_System_SetSystemIP(int ip[4])
+{
+    return ((RobotCtrl::System_SetSystemIP(ip) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_System_GetSystemIP(char ip_str[20])
+{
+    return ((RobotCtrl::System_GetSystemIP(ip_str) == FX_TRUE) ? 0 : -1);
+}
+
 /*=============================================================================
  * 连接处理
  *============================================================================*/
 int FX_L0_System_RequestControl(unsigned char ip1, unsigned char ip2, unsigned char ip3, unsigned char ip4)
 {
-    return ((RobotCtrl::RequestControl(ip1, ip2, ip3, ip4) == FX_TRUE) ? 0 : -1);
+    return RobotCtrl::RequestControl(ip1, ip2, ip3, ip4);
 }
  
 int FX_L0_System_Link(unsigned char ip1, unsigned char ip2, unsigned char ip3, unsigned char ip4)
@@ -221,24 +241,44 @@ int FX_L0_Lift_State_GetServoErrorCode(int axis_id, unsigned int *error_code)
     return ((RobotCtrl::Lift_State_GetServoErrorCode(axis_id, error_code) == FX_TRUE) ? 0 : -1);
 }
 
-int FX_L0_Arm0_State_GetServoVersion(int axis_id, char version[30])
+int FX_L0_Arm0_State_GetServoFirmwareVersion(int axis_id, char version[30])
 {
-    return ((RobotCtrl::Arm0_State_GetServoVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+    return ((RobotCtrl::Arm0_State_GetServoFirmwareVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
 }
 
-int FX_L0_Arm1_State_GetServoVersion(int axis_id, char version[30])
+int FX_L0_Arm1_State_GetServoFirmwareVersion(int axis_id, char version[30])
 {
-    return ((RobotCtrl::Arm1_State_GetServoVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+    return ((RobotCtrl::Arm1_State_GetServoFirmwareVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
 }
 
-int FX_L0_Head_State_GetServoVersion(int axis_id, char version[30])
+int FX_L0_Head_State_GetServoFirmwareVersion(int axis_id, char version[30])
 {
-    return ((RobotCtrl::Head_State_GetServoVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+    return ((RobotCtrl::Head_State_GetServoFirmwareVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
 }
 
-int FX_L0_Body_State_GetServoVersion(int axis_id, char version[30])
+int FX_L0_Body_State_GetServoFirmwareVersion(int axis_id, char version[30])
 {
-    return ((RobotCtrl::Body_State_GetServoVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+    return ((RobotCtrl::Body_State_GetServoFirmwareVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_Arm0_State_GetServoConfigVersion(int axis_id, unsigned int* version)
+{
+    return ((RobotCtrl::Arm0_State_GetServoConfigVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_Arm1_State_GetServoConfigVersion(int axis_id, unsigned int* version)
+{
+    return ((RobotCtrl::Arm1_State_GetServoConfigVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_Head_State_GetServoConfigVersion(int axis_id, unsigned int* version)
+{
+    return ((RobotCtrl::Head_State_GetServoConfigVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_Body_State_GetServoConfigVersion(int axis_id, unsigned int* version)
+{
+    return ((RobotCtrl::Body_State_GetServoConfigVersion(axis_id, version) == FX_TRUE) ? 0 : -1);
 }
 
 int FX_L0_Arm0_State_GetSensorVersion(int axis_id, int *version)
@@ -1059,3 +1099,17 @@ const ROBOT_SG *FX_L0_GetRobotSG(void)
     }
     return &ctrl->m_RobotSG;
 }
+
+int FX_L0_ResetSystemMsg()
+{
+    RobotCtrl *ctrl = RobotCtrl::GetIns();
+    return ((ctrl->OnResetSystemMsg() == FX_TRUE) ? 0 : -1);
+}
+
+int FX_L0_GetSystemMsg(char* msg, int max_msg_len)
+{
+    RobotCtrl *ctrl = RobotCtrl::GetIns();
+    return ctrl->OnGetSystemMsg(msg, max_msg_len);
+}
+
+

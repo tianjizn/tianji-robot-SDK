@@ -10,9 +10,11 @@ CPP_FILES="
   ./L0Control/*.cpp
   ./FileClient/*.cpp
   ./L1Robot/*.cpp
+  ./FXUtility/FXMath/*.cpp
+  ./FXUtility/FXCfg/*.cpp
+  ./Interf/*.cpp
   ./Kinematics/*.cpp
   ./Kinematics/ArmKinematics/*.cpp
-  ./Kinematics/BaseMath/*.cpp
   ./Kinematics/DynaIdent/*.cpp
   ./Kinematics/KineCommon/*.cpp
   ./Kinematics/MotionPlanner/*.cpp
@@ -21,9 +23,12 @@ CPP_FILES="
 
 INC_DIRS="
   -I./Common
+  -I./FXUtility
+  -I./FXUtility/FXMath
+  -I./FXUtility/FXCfg
+  -I./Interf
   -I./Kinematics
   -I./Kinematics/ArmKinematics
-  -I./Kinematics/BaseMath
   -I./Kinematics/DynaIdent
   -I./Kinematics/KineCommon
   -I./Kinematics/MotionPlanner
@@ -39,7 +44,7 @@ mkdir -p "$PYTHON_DIR" "$C_SO_DIR"
 cd "$SDK_DIR"
 
 echo "============================================"
-echo "[1/2] Building libGentoSDK.so (C/C++ link)"
+echo "[1/3] Building libGentoSDK.so (C/C++ link)"
 echo "============================================"
 g++ $CPP_FILES $INC_DIRS \
   -Wall -O2 -fPIC -shared \
@@ -49,7 +54,7 @@ echo "[OK] libGentoSDK.so built."
 
 echo ""
 echo "============================================"
-echo "[2/2] Building libGentoSDKPY.so (Python, glibc-compatible)"
+echo "[2/3] Building libGentoSDKPY.so (Python, glibc-compatible)"
 echo "============================================"
 g++ $CPP_FILES $INC_DIRS \
   -Wall -O2 -fPIC -shared \
@@ -65,12 +70,14 @@ cd "$SCRIPT_DIR"
 
 echo ""
 echo "============================================"
-echo "Copying SOs to target folders..."
+echo "[3/3] Copying SOs to target folders..."
 echo "============================================"
 
 if [ -f "$SDK_DIR/libGentoSDK.so" ]; then
     cp -v "$SDK_DIR/libGentoSDK.so" "$C_SO_DIR/"
     echo "[OK] libGentoSDK.so -> C_EXAMPLE_USE_DLL_SO/"
+    rm -f "$SDK_DIR/libGentoSDK.so"
+    echo "[OK] Delete C_SDK/libGentoSDK.so"
 else
     echo "[FAIL] Source file not found: $SDK_DIR/libGentoSDK.so"
     exit 1
@@ -79,6 +86,8 @@ fi
 if [ -f "$SDK_DIR/libGentoSDKPY.so" ]; then
     cp -v "$SDK_DIR/libGentoSDKPY.so" "$PYTHON_DIR/"
     echo "[OK] libGentoSDKPY.so -> PYTHON_SDK/"
+    rm -f "$SDK_DIR/libGentoSDKPY.so"
+    echo "[OK] Delete C_SDK/libGentoSDKPY.so"
 else
     echo "[FAIL] Source file not found: $SDK_DIR/libGentoSDKPY.so"
     exit 1

@@ -6,14 +6,14 @@ set SDK_DIR=%SCRIPT_DIR%C_SDK
 set PYTHON_DIR=%SCRIPT_DIR%PYTHON_SDK
 set C_DLL_DIR=%SCRIPT_DIR%C_EXAMPLE_USE_DLL_SO
 
-set CPP_FILES=./L0Control/*.cpp ./FileClient/*.cpp ./L1Robot/*.cpp ./Kinematics/*.cpp ./Kinematics/ArmKinematics/*.cpp ./Kinematics/BaseMath/*.cpp ./Kinematics/DynaIdent/*.cpp ./Kinematics/KineCommon/*.cpp ./Kinematics/MotionPlanner/*.cpp ./Kinematics/SkyeBodyKinematics/*.cpp
+set CPP_FILES=./L0Control/*.cpp ./FileClient/*.cpp ./L1Robot/*.cpp ./FXUtility/FXMath/*.cpp ./FXUtility/FXCfg/*.cpp ./Interf/*.cpp ./Kinematics/*.cpp ./Kinematics/ArmKinematics/*.cpp ./Kinematics/DynaIdent/*.cpp ./Kinematics/KineCommon/*.cpp ./Kinematics/MotionPlanner/*.cpp ./Kinematics/SkyeBodyKinematics/*.cpp
 
-set INC_DIRS=-I./Common -I./Kinematics -I./Kinematics/ArmKinematics -I./Kinematics/BaseMath -I./Kinematics/DynaIdent -I./Kinematics/KineCommon -I./Kinematics/MotionPlanner -I./Kinematics/SkyeBodyKinematics -I./FileClient -I./L0Control -I./L1Robot
+set INC_DIRS=-I./Common -I./FXUtility/ -I./FXUtility/FXMath -I./FXUtility/FXCfg -I./Interf -I./Kinematics -I./Kinematics/ArmKinematics -I./Kinematics/DynaIdent -I./Kinematics/KineCommon -I./Kinematics/MotionPlanner -I./Kinematics/SkyeBodyKinematics -I./FileClient -I./L0Control -I./L1Robot
 
 cd /d "%SDK_DIR%"
 
 echo ============================================
-echo [1/2] Building libGentoSDKPY.dll (Python)
+echo [1/3] Building libGentoSDKPY.dll (Python)
 echo ============================================
 g++ %CPP_FILES% %INC_DIRS% -Wall -O2 -shared -o libGentoSDKPY.dll -DL1_SDK_EXPORTS -DCMPL_WIN -static -static-libgcc -static-libstdc++ -lws2_32 -lwinmm
 if !ERRORLEVEL! NEQ 0 (
@@ -25,7 +25,7 @@ echo [OK] libGentoSDKPY.dll built.
 
 echo.
 echo ============================================
-echo [2/2] Building libGentoSDK.dll (C/C++ link)
+echo [2/3] Building libGentoSDK.dll (C/C++ link)
 echo ============================================
 g++ %CPP_FILES% %INC_DIRS% -Wall -O2 -shared -o libGentoSDK.dll -DL1_SDK_EXPORTS -DCMPL_WIN -lws2_32 -lwinmm
 if !ERRORLEVEL! NEQ 0 (
@@ -39,7 +39,7 @@ cd /d "%SCRIPT_DIR%"
 
 echo.
 echo ============================================
-echo Copying DLLs to target folders...
+echo [3/3] Copying DLLs to target folders...
 echo ============================================
 
 if not exist "%SDK_DIR%\libGentoSDKPY.dll" (
@@ -67,6 +67,10 @@ if !ERRORLEVEL! NEQ 0 (
     exit /b 1
 )
 echo [OK] libGentoSDK.dll copied to C_EXAMPLE_USE_DLL_SO\
+
+del /F /Q "%SDK_DIR%\libGentoSDK.dll" 2>nul
+del /F /Q "%SDK_DIR%\libGentoSDKPY.dll" 2>nul
+echo [OK] Delete C_SDK/libGentoSDK.dll  and  C_SDK/libGentoSDKPY.dll
 
 echo.
 echo ============================================

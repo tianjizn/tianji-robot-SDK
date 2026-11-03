@@ -9,3 +9,6 @@ C_SDK/libGentoSDK.dll
 my_test/
 html/
 FX_PLATFORM/dd.py
+
+# macOS 系统文件
+.DS_Store

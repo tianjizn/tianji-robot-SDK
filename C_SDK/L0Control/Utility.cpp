@@ -82,9 +82,9 @@ FX_BOOL CMarvNetAgent::OnLinkTo(FX_UCHAR ip1, FX_UCHAR ip2, FX_UCHAR ip3, FX_UCH
 	m_nc._local.sin_addr.s_addr = INADDR_ANY;
 	m_nc._local_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-	FX_UINT32L on = 1;
-	int opt = 1;
 #ifdef CMPL_WIN
+	u_long on = 1;
+	int opt = 1;
 	if (0 != ioctlsocket(m_nc._local_sock, FIONBIO, &on))
 	{
 		closesocket(m_nc._local_sock);
@@ -94,6 +94,8 @@ FX_BOOL CMarvNetAgent::OnLinkTo(FX_UCHAR ip1, FX_UCHAR ip2, FX_UCHAR ip3, FX_UCH
 	setsockopt(m_nc._local_sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt));
 #endif
 #ifdef CMPL_LIN
+	int on = 1;
+	int opt = 1;
 	if (0 != ioctl(m_nc._local_sock, FIONBIO, &on))
 	{
 		close(m_nc._local_sock);
@@ -208,12 +210,12 @@ FX_BOOL CMarvNetAgent::OnSend()
 		return FX_FALSE;
 	}
 
-    FX_INT32 send_len = sendto(m_nc._tosock_, (char *)m_buf.m_SendBuf, m_buf.m_Slen, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to));
-    if(send_len != m_buf.m_Slen)
-    {
-        return FX_FALSE;
-    }
-    return FX_TRUE;
+	FX_INT32 send_len = sendto(m_nc._tosock_, (char *)m_buf.m_SendBuf, m_buf.m_Slen, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to));
+	if (send_len != m_buf.m_Slen)
+	{
+		return FX_FALSE;
+	}
+	return FX_TRUE;
 #if 0    
 	if (m_buf.m_STag != 100)
 	{
@@ -247,7 +249,7 @@ FX_BOOL CMarvNetAgent::OnSend()
 	}
 	m_buf.m_Slen = 0;
 	return FX_TRUE;
-#endif    
+#endif
 }
 
 FX_BOOL CMarvNetAgent::OnSendLink()
@@ -269,62 +271,58 @@ FX_BOOL CMarvNetAgent::OnSendLink()
 	return FX_TRUE;
 }
 
-FX_BOOL CMarvNetAgent::OnRequestCtrl()
+FX_INT32 CMarvNetAgent::OnRequestCtrl()
 {
-    static FX_UINT8 ask_serial = 0;
-    static FX_CHAR send_buf[6] = {'F','X','A','S','K', 0};
+	static FX_UINT8 ask_serial = 0;
+	static FX_CHAR send_buf[6] = {'F', 'X', 'A', 'S', 'K', 0};
 
-    FX_INT32 wait_count = 0;
-    
-    send_buf[5] = ask_serial;
+	FX_INT32 wait_count = 0;
 
-	if(sendto(m_nc._tosock_, send_buf, 6, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to)) != 6)
+	send_buf[5] = ask_serial;
+
+	if (sendto(m_nc._tosock_, send_buf, 6, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to)) != 6)
 	{
-		return FX_FALSE;
+		return -1;
 	}
-    
-    while(wait_count < 20)
-    {
-        CUtility::UniMilliSleep(10);
-        wait_count++;   
-        OnRecv();
-        if(m_buf.m_Rlen != 7)
-        {
-            continue;
-        }
-        if(m_buf.m_Recvbuf[0] == 'F'
-            && m_buf.m_Recvbuf[1] == 'X'
-            && m_buf.m_Recvbuf[2] == 'A'
-            && m_buf.m_Recvbuf[3] == 'C'
-            && m_buf.m_Recvbuf[4] == 'K')
-        {
-            if(m_buf.m_Recvbuf[5] != ask_serial)
-            {
-                continue;
-            }
-            if(m_buf.m_Recvbuf[6] == 1)
-            {
-                return FX_TRUE;
-            }
-            else
-            {
-                return FX_FALSE;
-            }
-        }
-    }
-	return FX_FALSE;
+
+	while (wait_count < 20)
+	{
+		CUtility::UniMilliSleep(10);
+		wait_count++;
+		OnRecv();
+		if (m_buf.m_Rlen != 7)
+		{
+			continue;
+		}
+		if (m_buf.m_Recvbuf[0] == 'F' && m_buf.m_Recvbuf[1] == 'X' && m_buf.m_Recvbuf[2] == 'A' && m_buf.m_Recvbuf[3] == 'C' && m_buf.m_Recvbuf[4] == 'K')
+		{
+			if (m_buf.m_Recvbuf[5] != ask_serial)
+			{
+				continue;
+			}
+			if (m_buf.m_Recvbuf[6] == 1)
+			{
+				return 0;
+			}
+			else
+			{
+				return -2;
+			}
+		}
+	}
+	return -1;
 }
 
 FX_BOOL CMarvNetAgent::OnSendBeat()
 {
-    static FX_CHAR send_buf[6] = {'F','X','B','E','A','T'};
-    
+	static FX_CHAR send_buf[6] = {'F', 'X', 'B', 'E', 'A', 'T'};
+
 	if (m_LinkTag == FX_FALSE)
 	{
 		return FX_FALSE;
 	}
 
-	if(sendto(m_nc._tosock_, (FX_CHAR *)send_buf, 6, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to)) != 6)
+	if (sendto(m_nc._tosock_, (FX_CHAR *)send_buf, 6, 0, (struct sockaddr *)&m_nc._to, sizeof(m_nc._to)) != 6)
 	{
 		return FX_FALSE;
 	}

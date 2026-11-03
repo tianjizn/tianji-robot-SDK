@@ -125,7 +125,7 @@ void thread1()
 
             if (FX_L1_Runtime_SetJointPosCmd(2, FX_OBJ_ARM1, cmd_pos) != FUNC_RET_SUCCESS)
             {
-                error_count[0]++;
+                error_count[1]++;
             }
         }
         next_tick += period;
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
     getchar();
     run_thread = 0;
     printf("Threads stopped\n");
-    printf("error_count = %d %d\n", error_count[0], error_count[1]);
+    printf("error_count = %d %d %d\n", error_count[0], error_count[1], error_count[2]);
     getchar();
 
     /* Return to IDLE state */

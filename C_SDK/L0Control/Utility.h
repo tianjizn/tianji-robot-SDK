@@ -47,7 +47,7 @@ public:
 	FX_BOOL OnSend();
 	FX_BOOL OnSendRaw();
 	FX_BOOL OnSendLink();
-    FX_BOOL OnRequestCtrl();
+    FX_INT32 OnRequestCtrl();
     FX_BOOL OnSendBeat();
 	FX_BOOL OnRecv();
 	NetCell m_nc;

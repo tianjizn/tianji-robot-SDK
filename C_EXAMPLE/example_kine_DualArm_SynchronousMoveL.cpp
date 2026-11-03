@@ -150,24 +150,12 @@ static int PrepareArmPositionMode(FXObjType obj_type,
 
 static int StartTrajectory(unsigned int obj_mask)
 {
-    int err_code = 0;
     unsigned int started_mask = 0;
-    err_code = FX_L1_Comm_Clear(20);
-    if (err_code != FUNC_RET_SUCCESS)
-    {
-        printf("Failed to clear communication before starting synchronous trajectory. Error code: %d\n", err_code);
-        return -1;
-    }
-    started_mask = FX_L1_Runtime_RunTraj(obj_mask);
+
+    started_mask = FX_L1_Runtime_RunTraj(1, obj_mask);
     if ((started_mask & obj_mask) != obj_mask)
     {
         printf("Failed to start synchronous trajectory, returned mask = 0x%08x\n", started_mask);
-        return -1;
-    }
-    err_code = FX_L1_Comm_Send();
-    if (err_code != FUNC_RET_SUCCESS)
-    {
-        printf("Failed to send synchronous trajectory start command. Error code: %d\n", err_code);
         return -1;
     }
     return 0;
@@ -237,9 +225,7 @@ int DualArm_SynchronousMoveL_ByIniConfig()
     PrintJointPosition("Press any key to let arm0 move to target position", arm0_ref_joints);
     getchar();
 
-    if (FX_L1_Comm_Clear(500) != FUNC_RET_SUCCESS ||
-        FX_L1_Runtime_SetJointPosCmd(FX_OBJ_ARM0, arm0_ref_joints) != FUNC_RET_SUCCESS ||
-        FX_L1_Comm_Send() != FUNC_RET_SUCCESS)
+    if (FX_L1_Runtime_SetJointPosCmd(1, FX_OBJ_ARM0, arm0_ref_joints) != FUNC_RET_SUCCESS)
     {
         printf("Failed to set Arm0's target position\n");
         goto WAIT_EXIT;
@@ -248,37 +234,23 @@ int DualArm_SynchronousMoveL_ByIniConfig()
     PrintJointPosition("Press any key to let arm1 move to target position", arm1_ref_joints);
     getchar();
 
-    if (FX_L1_Comm_Clear(500) != FUNC_RET_SUCCESS ||
-        FX_L1_Runtime_SetJointPosCmd(FX_OBJ_ARM1, arm1_ref_joints) != FUNC_RET_SUCCESS ||
-        FX_L1_Comm_Send() != FUNC_RET_SUCCESS)
+    if (FX_L1_Runtime_SetJointPosCmd(1, FX_OBJ_ARM1, arm1_ref_joints) != FUNC_RET_SUCCESS)
     {
         printf("Failed to set Arm1's target position\n");
         goto WAIT_EXIT;
     }
 
     /* Set global velocity ratio and acceleration ratio for motion planning. */
-    err_code = FX_L1_Comm_Clear(500);
-    if (err_code != FUNC_RET_SUCCESS)
-    {
-        printf("Communication clear buffer failed. Error code: %d\n", err_code);
-        goto WAIT_EXIT;
-    }
-    err_code = FX_L1_Runtime_SetSpeedRatio(FX_OBJ_ARM0, global_vel_, global_acc_);
+    err_code = FX_L1_Runtime_SetSpeedRatio(1, FX_OBJ_ARM0, global_vel_, global_acc_);
     if (err_code != FUNC_RET_SUCCESS)
     {
         printf("Failed to set Arm0 velocity ratio. Error code: %d\n", err_code);
         goto WAIT_EXIT;
     }
-    err_code = FX_L1_Runtime_SetSpeedRatio(FX_OBJ_ARM1, global_vel_, global_acc_);
+    err_code = FX_L1_Runtime_SetSpeedRatio(1, FX_OBJ_ARM1, global_vel_, global_acc_);
     if (err_code != FUNC_RET_SUCCESS)
     {
         printf("Failed to set Arm1 velocity ratio. Error code: %d\n", err_code);
-        goto WAIT_EXIT;
-    }
-    err_code = FX_L1_Comm_Send();   
-    if (err_code != FUNC_RET_SUCCESS)
-    {
-        printf("Failed to send communication command. Error code: %d\n", err_code);
         goto WAIT_EXIT;
     }
     SLEEP_MS(20);

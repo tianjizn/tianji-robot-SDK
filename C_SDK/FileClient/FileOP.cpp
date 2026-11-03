@@ -176,7 +176,7 @@ bool CFileOp::OnStateOK(FileIns * ins)
 	}
 	if(ins->m_InsType == INS_TYPE_Send_Request)
 	{
-		//ÊÕµ½·¢ËÍÇëÇó
+		//æ”¶åˆ°å‘é€è¯·æ±‚
 		if(ins->m_CellSize >= 512 || ins->m_CellSize <= 0 )
 		{
 			ins->m_InsType = INS_TYPE_Send_Request_Report;
@@ -202,7 +202,7 @@ bool CFileOp::OnStateOK(FileIns * ins)
 
 	if(ins->m_InsType == INS_TYPE_Get_Request)
 	{
-		//ÊÕµ½·¢ËÍÇëÇó
+		//æ”¶åˆ°å‘é€è¯·æ±‚
 		if(ins->m_CellSize >= 512 || ins->m_CellSize <= 0 )
 		{
 			ins->m_InsType = INS_TYPE_Get_Request_Report;

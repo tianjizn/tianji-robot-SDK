@@ -337,10 +337,20 @@ int FX_L1_System_Link(unsigned char ip1, unsigned char ip2, unsigned char ip3, u
         _FX_ERRO("%s: Invalid IP address: %u.%u.%u.%u", __FUNCTION__, ip1, ip2, ip3, ip4);
         return FUNC_RET_INVALID_INPUT_ARG;
     }
-
-    if (FX_L0_System_RequestControl(ip1, ip2, ip3, ip4) != 0)
+    while(FX_L0_ResetSystemMsg() != 0)
     {
-        _FX_ERRO("%s: Link robot failed, the ethernet work is down or someone has already linked to the controller", __FUNCTION__);
+        CUtility::UniMilliSleep(10);
+    }
+    int request_ret = FX_L0_System_RequestControl(ip1, ip2, ip3, ip4);
+    if (request_ret == -1)
+    {
+        _FX_ERRO("%s: Link robot failed, the ethernet work is down", __FUNCTION__);
+        FX_L0_System_Unlink();
+        return FUNC_RET_LINK_FAILED;
+    }
+    else if (request_ret == -2)
+    {
+        _FX_ERRO("%s: Link robot failed, someone has already linked to the controller", __FUNCTION__);
         FX_L0_System_Unlink();
         return FUNC_RET_LINK_REJECTED;
     }
@@ -631,6 +641,54 @@ int FX_L1_System_RecvFile(char *local_file_path, char *remote_file_path)
     }
 }
 
+int FX_L1_System_SetSystemTime(int year, int month, int day, int hour, int minute, int second)
+{
+    if(FX_L0_System_SetSystemTime(year, month, day, hour, minute, second) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
+int FX_L1_System_GetSystemTime(char time_str[20])
+{
+    if(FX_L0_System_GetSystemTime(time_str) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
+int FX_L1_System_SetSystemIP(int ip[4])
+{
+    if(FX_L0_System_SetSystemIP(ip) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
+int FX_L1_System_GetSystemIP(char ip_str[20])
+{
+    if(FX_L0_System_GetSystemIP(ip_str) == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
 int FX_L1_Fbk_GetCtrlObjDof(FXObjType obj_type)
 {
     switch (obj_type)
@@ -650,7 +708,7 @@ int FX_L1_Fbk_GetCtrlObjDof(FXObjType obj_type)
     }
 }
 
-int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
+int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char firmware_version[7][30], unsigned int config_version[7])
 {
     std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
     switch (obj_type)
@@ -661,16 +719,23 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
         {
             if (i < FX_ARM0_DOF)
             {
-                if (FX_L0_Arm0_State_GetServoVersion(i, version[i]) != 0)
+                if (FX_L0_Arm0_State_GetServoFirmwareVersion(i, firmware_version[i]) != 0)
                 {
-                    _FX_WARN("%s: Failed to get %s.Axis%d servo version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
-                    version[i][0] = 0;
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo firmware version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    firmware_version[i][0] = 0;
                     return FUNC_RET_OPERATION_FAILED;
                 }
+                if (FX_L0_Arm0_State_GetServoConfigVersion(i, &config_version[i]) != 0)
+                {
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo config version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    config_version[i] = 0;
+                    return FUNC_RET_OPERATION_FAILED;
+                }                
             }
             else
             {
-                version[i][0] = 0;
+                firmware_version[i][0] = 0;
+                config_version[i] = 0;
             }
         }
         break;
@@ -681,16 +746,23 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
         {
             if (i < FX_ARM1_DOF)
             {
-                if (FX_L0_Arm1_State_GetServoVersion(i, version[i]) != 0)
+                if (FX_L0_Arm1_State_GetServoFirmwareVersion(i, firmware_version[i]) != 0)
                 {
-                    _FX_WARN("%s: Failed to get %s.Axis%d servo version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
-                    version[i][0] = 0;
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo firmware version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    firmware_version[i][0] = 0;
                     return FUNC_RET_OPERATION_FAILED;
                 }
+                if (FX_L0_Arm1_State_GetServoConfigVersion(i, &config_version[i]) != 0)
+                {
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo config version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    config_version[i] = 0;
+                    return FUNC_RET_OPERATION_FAILED;
+                } 
             }
             else
             {
-                version[i][0] = 0;
+                firmware_version[i][0] = 0;
+                config_version[i] = 0;
             }
         }
         break;
@@ -701,16 +773,23 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
         {
             if (i < FX_HEAD_DOF)
             {
-                if (FX_L0_Head_State_GetServoVersion(i, version[i]) != 0)
+                if (FX_L0_Head_State_GetServoFirmwareVersion(i, firmware_version[i]) != 0)
                 {
-                    _FX_WARN("%s: Failed to get %s.Axis%d servo version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
-                    version[i][0] = 0;
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo firmware version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    firmware_version[i][0] = 0;
                     return FUNC_RET_OPERATION_FAILED;
                 }
+                if (FX_L0_Head_State_GetServoConfigVersion(i, &config_version[i]) != 0)
+                {
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo config version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    config_version[i] = 0;
+                    return FUNC_RET_OPERATION_FAILED;
+                } 
             }
             else
             {
-                version[i][0] = 0;
+                firmware_version[i][0] = 0;
+                config_version[i] = 0;
             }
         }
         break;
@@ -721,16 +800,23 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
         {
             if (i < FX_BODY_DOF)
             {
-                if (FX_L0_Body_State_GetServoVersion(i, version[i]) != 0)
+                if (FX_L0_Body_State_GetServoFirmwareVersion(i, firmware_version[i]) != 0)
                 {
-                    _FX_WARN("%s: Failed to get %s.Axis%d servo version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
-                    version[i][0] = 0;
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo firmware version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    firmware_version[i][0] = 0;
                     return FUNC_RET_OPERATION_FAILED;
                 }
+                if (FX_L0_Body_State_GetServoConfigVersion(i, &config_version[i]) != 0)
+                {
+                    _FX_WARN("%s: Failed to get %s.Axis%d servo config version", __FUNCTION__, _FX_ObjType2Str(obj_type), i);
+                    config_version[i] = 0;
+                    return FUNC_RET_OPERATION_FAILED;
+                } 
             }
             else
             {
-                version[i][0] = 0;
+                firmware_version[i][0] = 0;
+                config_version[i] = 0;
             }
         }
         break;
@@ -739,13 +825,11 @@ int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type, char version[7][30])
     default:
     {
         _FX_ERRO("%s: %s doesn't support the operation", __FUNCTION__, _FX_ObjType2Str(obj_type));
-        version[0][0] = 0;
-        version[1][0] = 0;
-        version[2][0] = 0;
-        version[3][0] = 0;
-        version[4][0] = 0;
-        version[5][0] = 0;
-        version[6][0] = 0;
+        for(FX_INT32 i = 0; i < 7; i++)
+        {
+            firmware_version[i][0] = 0;
+            config_version[i] = 0;
+        }
         return FUNC_RET_INVALID_OBJ;
     }
     }
@@ -1248,6 +1332,23 @@ int FX_L1_Fbk_CheckUserDataSet(int user_data_len)
         return FUNC_RET_INVALID_USER_DATA_LEN;
     }
     return FUNC_RET_SUCCESS;
+}
+
+int FX_L1_Fbk_ResetSystemMsg()
+{
+    if(FX_L0_ResetSystemMsg() == 0)
+    {
+        return FUNC_RET_SUCCESS;
+    }
+    else
+    {
+        return FUNC_RET_OPERATION_FAILED;
+    }
+}
+
+int FX_L1_Fbk_GetSystemMsg(char* msg, int max_msg_len)
+{
+    return FX_L0_GetSystemMsg(msg, max_msg_len);
 }
 
 int FX_L1_State_GetServoErrorCode(FXObjType obj_type, unsigned int error_code[7])
@@ -4374,6 +4475,12 @@ int FX_L1_Config_SetTraj(FXObjType obj_type, unsigned int point_num, double *poi
         return FUNC_RET_INVALID_ROBOT_TYPE;
     }
 
+    int runtime_ret = 0;
+    int try_count = 0;
+    unsigned int full_frame_num = point_num / 50;
+    unsigned int relic_point_num = point_num % 50;
+    unsigned int full_frame_count = 0; 
+
     switch (obj_type)
     {
     case FX_OBJ_ARM0:
@@ -4389,14 +4496,24 @@ int FX_L1_Config_SetTraj(FXObjType obj_type, unsigned int point_num, double *poi
             return FUNC_RET_INVALID_CONDITION;
         }
         // InitTraj
+        try_count = 0;
         {
+ARM0_TRY_AGAIN1:        
             std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
-            if (FX_L0_Arm0_Runtime_InitTraj(FX_DEFAULT_THREAD_ID, point_num) != 0)
+            runtime_ret = FX_L0_Arm0_Runtime_InitTraj(FX_DEFAULT_THREAD_ID, point_num);
+        }
+        if(runtime_ret != 0)
+        {
+            if(try_count > 100)
             {
                 _FX_ERRO("%s: %s format command Runtime_InitTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
                 return FUNC_RET_FORMAT_CMD_FAILED;
             }
-        }
+            CUtility::UniMilliSleep(1);
+            try_count++;
+            goto ARM0_TRY_AGAIN1;
+        }        
+        
         int wait_count = 10;
         do
         {
@@ -4409,25 +4526,49 @@ int FX_L1_Config_SetTraj(FXObjType obj_type, unsigned int point_num, double *poi
             }
         } while (RobotCtrl::GetIns()->m_RobotSG.m_ARMS[0].m_ARM_GET.m_ARM_FBK_TrajState != 1);
         // SetTraj
-        unsigned int full_frame_num = point_num / 50;
-        unsigned int relic_point_num = point_num % 50;
+        while(full_frame_count < full_frame_num)
         {
-            std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
-            for (unsigned int i = 0; i < full_frame_num; i++)
+            try_count = 0;
             {
-                if (FX_L0_Arm0_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, i, 50, &point_data[350 * i]) != 0)
-                {
-                    _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
-                    return FUNC_RET_FORMAT_CMD_FAILED;
-                }
+ARM0_TRY_AGAIN2:            
+                std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+                runtime_ret = FX_L0_Arm0_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_count, 50, &point_data[350 * full_frame_count]);
             }
-            if (relic_point_num != 0)
+            if(runtime_ret != 0)
             {
-                if (FX_L0_Arm0_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_num, relic_point_num, &point_data[350 * full_frame_num]) != 0)
+                if(try_count > 100)
                 {
                     _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
                     return FUNC_RET_FORMAT_CMD_FAILED;
                 }
+                CUtility::UniMilliSleep(1);
+                try_count++;
+                goto ARM0_TRY_AGAIN2;
+            }
+            else
+            {
+                full_frame_count++;
+            }
+        }
+
+        if (relic_point_num != 0)
+        {
+            try_count = 0;
+            {
+ARM0_TRY_AGAIN3:            
+                std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+                runtime_ret = FX_L0_Arm0_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_num, relic_point_num, &point_data[350 * full_frame_num]);
+            }
+            if(runtime_ret != 0)
+            {
+                if(try_count > 100)
+                {
+                    _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
+                    return FUNC_RET_FORMAT_CMD_FAILED;
+                }
+                CUtility::UniMilliSleep(1);
+                try_count++;
+                goto ARM0_TRY_AGAIN3;
             }
         }
         wait_count = 10;
@@ -4458,14 +4599,24 @@ int FX_L1_Config_SetTraj(FXObjType obj_type, unsigned int point_num, double *poi
             return FUNC_RET_INVALID_CONDITION;
         }
         // InitTraj
+        try_count = 0;
         {
+ARM1_TRY_AGAIN1:        
             std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
-            if (FX_L0_Arm1_Runtime_InitTraj(FX_DEFAULT_THREAD_ID, point_num) != 0)
+            runtime_ret = FX_L0_Arm1_Runtime_InitTraj(FX_DEFAULT_THREAD_ID, point_num);
+        }
+        if(runtime_ret != 0)
+        {
+            if(try_count > 100)
             {
                 _FX_ERRO("%s: %s format command Runtime_InitTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
                 return FUNC_RET_FORMAT_CMD_FAILED;
             }
-        }
+            CUtility::UniMilliSleep(1);
+            try_count++;
+            goto ARM1_TRY_AGAIN1;
+        }  
+
         int wait_count = 10;
         do
         {
@@ -4478,25 +4629,49 @@ int FX_L1_Config_SetTraj(FXObjType obj_type, unsigned int point_num, double *poi
             }
         } while (RobotCtrl::GetIns()->m_RobotSG.m_ARMS[1].m_ARM_GET.m_ARM_FBK_TrajState != 1);
         // SetTraj
-        unsigned int full_frame_num = point_num / 50;
-        unsigned int relic_point_num = point_num % 50;
+        while(full_frame_count < full_frame_num)
         {
-            std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
-            for (unsigned int i = 0; i < full_frame_num; i++)
+            try_count = 0;
             {
-                if (FX_L0_Arm1_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, i, 50, &point_data[350 * i]) != 0)
-                {
-                    _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
-                    return FUNC_RET_FORMAT_CMD_FAILED;
-                }
+ARM1_TRY_AGAIN2:            
+                std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+                runtime_ret = FX_L0_Arm1_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_count, 50, &point_data[350 * full_frame_count]);
             }
-            if (relic_point_num != 0)
+            if(runtime_ret != 0)
             {
-                if (FX_L0_Arm1_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_num, relic_point_num, &point_data[350 * full_frame_num]) != 0)
+                if(try_count > 100)
                 {
                     _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
                     return FUNC_RET_FORMAT_CMD_FAILED;
                 }
+                CUtility::UniMilliSleep(1);
+                try_count++;
+                goto ARM1_TRY_AGAIN2;
+            }
+            else
+            {
+                full_frame_count++;
+            }
+        }
+
+        if (relic_point_num != 0)
+        {
+            try_count = 0;
+            {
+ARM1_TRY_AGAIN3:            
+                std::lock_guard<std::mutex> lock(FX_L1_MUTEX);
+                runtime_ret = FX_L0_Arm1_Runtime_SetTraj(FX_DEFAULT_THREAD_ID, full_frame_num, relic_point_num, &point_data[350 * full_frame_num]);
+            }
+            if(runtime_ret != 0)
+            {
+                if(try_count > 100)
+                {
+                    _FX_ERRO("%s: %s format command Runtime_SetTraj failed", __FUNCTION__, _FX_ObjType2Str(obj_type));
+                    return FUNC_RET_FORMAT_CMD_FAILED;
+                }
+                CUtility::UniMilliSleep(1);
+                try_count++;
+                goto ARM1_TRY_AGAIN3;
             }
         }
         wait_count = 10;

@@ -15,7 +15,7 @@ public:
 	连接处理
 	//////////////////////////////////////////////////////////////////////////////////////*/
 	//(1)	创建UDP端口和启动周期数据接收/发送服务
-	static FX_BOOL RequestControl(FX_UCHAR ip1, FX_UCHAR ip2, FX_UCHAR ip3, FX_UCHAR ip4);
+	static FX_INT32 RequestControl(FX_UCHAR ip1, FX_UCHAR ip2, FX_UCHAR ip3, FX_UCHAR ip4);
 	static FX_BOOL Link(FX_UCHAR ip1, FX_UCHAR ip2, FX_UCHAR ip3, FX_UCHAR ip4);
 	static FX_VOID Unlink();
 	//(2)	开启连接：发送数据到控制器控制器开始周期性返回数据（返回值为收到控制器数据所经历的毫秒数，可以用来判断是否正确启动通信）
@@ -28,6 +28,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////////*/
 	static FX_VOID OnLocalLogOn();
 	static FX_VOID OnLocalLogOff();
+    static FX_BOOL OnResetSystemMsg();
+    static FX_INT32 OnGetSystemMsg(FX_CHAR* msg, FX_INT32 max_msg_len);
 
 	/*//////////////////////////////////////////////////////////////////////////////////////
 	系统操作
@@ -39,6 +41,10 @@ public:
 	static FX_BOOL System_Update();
 	static FX_BOOL System_SetPDCmdCycleTime(FX_INT32 cycle_time);
 	static FX_BOOL System_GetPDCmdCycleTime(FX_INT32 *cycle_time);
+    static FX_BOOL System_SetSystemTime(FX_INT32 year, FX_INT32 month, FX_INT32 day, FX_INT32 hour, FX_INT32 minute, FX_INT32 second);
+    static FX_BOOL System_GetSystemTime(FX_CHAR time_str[20]);
+    static FX_BOOL System_SetSystemIP(FX_INT32 ip[4]);
+    static FX_BOOL System_GetSystemIP(FX_CHAR ip_str[20]);
 
 	/*//////////////////////////////////////////////////////////////////////////////////////
 	通道数据接口:对双臂末端板的通信接口进行透传处理的接口
@@ -76,10 +82,15 @@ public:
 	static FX_BOOL Body_State_GetServoErrorCode(FX_INT32 axis_id, FX_UINT32 *error_code);
 	static FX_BOOL Lift_State_GetServoErrorCode(FX_INT32 axis_id, FX_UINT32 *error_code);
 
-	static FX_BOOL Arm0_State_GetServoVersion(FX_INT32 axis_id, FX_CHAR version[30]);
-	static FX_BOOL Arm1_State_GetServoVersion(FX_INT32 axis_id, FX_CHAR version[30]);
-	static FX_BOOL Head_State_GetServoVersion(FX_INT32 axis_id, FX_CHAR version[30]);
-	static FX_BOOL Body_State_GetServoVersion(FX_INT32 axis_id, FX_CHAR version[30]);
+	static FX_BOOL Arm0_State_GetServoFirmwareVersion(FX_INT32 axis_id, FX_CHAR version[30]);
+	static FX_BOOL Arm1_State_GetServoFirmwareVersion(FX_INT32 axis_id, FX_CHAR version[30]);
+	static FX_BOOL Head_State_GetServoFirmwareVersion(FX_INT32 axis_id, FX_CHAR version[30]);
+	static FX_BOOL Body_State_GetServoFirmwareVersion(FX_INT32 axis_id, FX_CHAR version[30]);
+
+    static FX_BOOL Arm0_State_GetServoConfigVersion(FX_INT32 axis_id, FX_UINT32* version);
+    static FX_BOOL Arm1_State_GetServoConfigVersion(FX_INT32 axis_id, FX_UINT32* version);
+    static FX_BOOL Head_State_GetServoConfigVersion(FX_INT32 axis_id, FX_UINT32* version);
+    static FX_BOOL Body_State_GetServoConfigVersion(FX_INT32 axis_id, FX_UINT32* version);
 
 	static FX_BOOL Arm0_State_GetSensorVersion(FX_INT32 axis_id, FX_INT32 *version);
 	static FX_BOOL Arm1_State_GetSensorVersion(FX_INT32 axis_id, FX_INT32 *version);
@@ -279,8 +290,10 @@ private:
 	CMarvNetAgent m_SG_NA;
 	CMarvNetAgent m_Flange_NA0;
 	CMarvNetAgent m_Flange_NA1;
+    CMarvNetAgent m_Msg_NA;
 	CACB m_ACB1;
 	CACB m_ACB2;
+    CACB m_ACB_Msg;
 	FX_CHAR m_SendBuf1[600];
 	FX_CHAR m_SendBuf2[600];
 	DDSS *pDDSS1;

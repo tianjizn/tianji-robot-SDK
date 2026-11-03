@@ -1,8 +1,7 @@
-﻿#ifndef FX_UDPCOMMON_H_
+#ifndef FX_UDPCOMMON_H_
 #define FX_UDPCOMMON_H_
 
 #include "FXType.h"
-
 
 typedef enum
 {
@@ -122,6 +121,10 @@ typedef enum
 	OPINS_SYSTEM_CHECK_VERSION = 13,		 // Input: m_OpValueI, sdk version; Output: m_OpValueI, 0: failed; 1: pass
 	OPINS_SYSTEM_SET_PD_CMD_CYCLE_TIME = 14, // Input: m_OpValueI, command cycle time in PD mode, ms; Output: null
 	OPINS_SYSTEM_GET_PD_CMD_CYCLE_TIME = 15, // Input: null; Output: m_OpValueI, command cycle time in PD mode, ms
+	OPINS_SYSTEM_SET_TIME = 16,				 // Input: m_OpValueS, "YYYY-MM-DD hh:mm:ss"; Output: null
+	OPINS_SYSTEM_GET_TIME = 17,				 // Input: null; Output: m_OpValueS, "YYYY-MM-DD hh:mm:ss"
+	OPINS_SYSTEM_SET_IP = 18,				 // Input: m_OpValueS, "192.168.1.190"; Output: null
+	OPINS_SYSTEM_GET_IP = 19,				 // Input: null; Output: m_OpValueS, "192.168.1.190"
 
 	// Arm0
 	OPINS_ARM0_RESET = 100,					// Input: null; Output: null
@@ -140,11 +143,12 @@ typedef enum
 	OPINS_ARM0_SENSOR6_SET_OFFSET = 113,	// Input: m_OpValueI, sensor offset; Output: null
 	OPINS_ARM0_SENSOR7_SET_OFFSET = 114,	// Input: m_OpValueI, sensor offset; Output: null
 
-	OPINS_ARM0_SERVO_GET_ERROR_CODE = 150, // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
-	OPINS_ARM0_SERVO_GET_VERSION = 151,	   // Input: m_OpValueI, servo id; Output: m_OpValueS, servo version
-	OPINS_ARM0_SENSOR_GET_VERSION = 152,   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
-	OPINS_ARM0_SENSOR_GET_SERIAL = 153,	   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
-	OPINS_ARM0_GET_PHYSIC_STATE = 154,	   // Input: null; Output: m_OpValueI, physical state
+	OPINS_ARM0_SERVO_GET_ERROR_CODE = 150,		 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
+	OPINS_ARM0_SERVO_GET_FIRMWARE_VERSION = 151, // Input: m_OpValueI, servo id; Output: m_OpValueS, servo version
+	OPINS_ARM0_SENSOR_GET_VERSION = 152,		 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
+	OPINS_ARM0_SENSOR_GET_SERIAL = 153,			 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
+	OPINS_ARM0_GET_PHYSIC_STATE = 154,			 // Input: null; Output: m_OpValueI, physical state
+	OPINS_ARM0_SERVO_GET_CONFIG_VERSION = 155,	 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo config version
 
 	// Arm1
 	OPINS_ARM1_RESET = 200,					// Input: null; Output: null
@@ -163,11 +167,12 @@ typedef enum
 	OPINS_ARM1_SENSOR6_SET_OFFSET = 213,	// Input: m_OpValueI, sensor offset; Output: null
 	OPINS_ARM1_SENSOR7_SET_OFFSET = 214,	// Input: m_OpValueI, sensor offset; Output: null
 
-	OPINS_ARM1_SERVO_GET_ERROR_CODE = 250, // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
-	OPINS_ARM1_SERVO_GET_VERSION = 251,	   // Input: m_OpValueI, servo id; Output: m_OpValueS, servo version
-	OPINS_ARM1_SENSOR_GET_VERSION = 252,   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
-	OPINS_ARM1_SENSOR_GET_SERIAL = 253,	   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
-	OPINS_ARM1_GET_PHYSIC_STATE = 254,	   // Input: null; Output: m_OpValueI, physical state
+	OPINS_ARM1_SERVO_GET_ERROR_CODE = 250,		 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
+	OPINS_ARM1_SERVO_GET_FIRMWARE_VERSION = 251, // Input: m_OpValueI, servo id; Output: m_OpValueS, servo firmware version
+	OPINS_ARM1_SENSOR_GET_VERSION = 252,		 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
+	OPINS_ARM1_SENSOR_GET_SERIAL = 253,			 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
+	OPINS_ARM1_GET_PHYSIC_STATE = 254,			 // Input: null; Output: m_OpValueI, physical state
+	OPINS_ARM1_SERVO_GET_CONFIG_VERSION = 255,	 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo config version
 
 	// Head
 	OPINS_HEAD_RESET = 300,					// Input: null; Output: null
@@ -178,9 +183,10 @@ typedef enum
 	OPINS_HEAD_ENC_CLEAR_ERROR = 305,		// Input: m_OpValueI, bit0~7 for each enc; Output: null
 	OPINS_HEAD_ENC_RESET_MULTI_TURN = 306,	// Input: m_OpValueI, bit0~7 for each extenc; Output: null
 
-	OPINS_HEAD_SERVO_GET_ERROR_CODE = 350, // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
-	OPINS_HEAD_SERVO_GET_VERSION = 351,	   // Input: m_OpValueI, servo id; Output: m_OpValueS, servo version
-	OPINS_HEAD_GET_PHYSIC_STATE = 354,	   // Input: null; Output: m_OpValueI, physical state
+	OPINS_HEAD_SERVO_GET_ERROR_CODE = 350,		 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
+	OPINS_HEAD_SERVO_GET_FIRMWARE_VERSION = 351, // Input: m_OpValueI, servo id; Output: m_OpValueS, servo firmware version
+	OPINS_HEAD_GET_PHYSIC_STATE = 354,			 // Input: null; Output: m_OpValueI, physical state
+	OPINS_HEAD_SERVO_GET_CONFIG_VERSION = 355,	 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo config version
 
 	// Body
 	OPINS_BODY_RESET = 400,					// Input: null; Output: null
@@ -199,11 +205,12 @@ typedef enum
 	OPINS_BODY_SENSOR6_SET_OFFSET = 413,	// Input: m_OpValueI, sensor offset; Output: null
 	OPINS_BODY_SENSOR7_SET_OFFSET = 414,	// Input: m_OpValueI, sensor offset; Output: null
 
-	OPINS_BODY_SERVO_GET_ERROR_CODE = 450, // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
-	OPINS_BODY_SERVO_GET_VERSION = 451,	   // Input: m_OpValueI, servo id; Output: m_OpValueS, servo version
-	OPINS_BODY_SENSOR_GET_VERSION = 452,   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
-	OPINS_BODY_SENSOR_GET_SERIAL = 453,	   // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
-	OPINS_BODY_GET_PHYSIC_STATE = 454,	   // Input: null; Output: m_OpValueI, physical state
+	OPINS_BODY_SERVO_GET_ERROR_CODE = 450,		 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo error code
+	OPINS_BODY_SERVO_GET_FIRMWARE_VERSION = 451, // Input: m_OpValueI, servo id; Output: m_OpValueS, servo firmware version
+	OPINS_BODY_SENSOR_GET_VERSION = 452,		 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor version
+	OPINS_BODY_SENSOR_GET_SERIAL = 453,			 // Input: m_OpValueI, sensor id; Output: m_OpValueI, sensor serial
+	OPINS_BODY_GET_PHYSIC_STATE = 454,			 // Input: null; Output: m_OpValueI, physical state
+	OPINS_BODY_SERVO_GET_CONFIG_VERSION = 455,	 // Input: m_OpValueI, servo id; Output: m_OpValueI, servo config version
 
 	// Lift
 	OPINS_LIFT_RESET = 500,				// Input: null; Output: null

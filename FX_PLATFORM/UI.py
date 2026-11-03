@@ -36,8 +36,10 @@ class App:
         self.data_manager = None
         self.rt = None
         self.sg = None
+        self._log_running = False
 
         self.servo_versions = {}
+        self.servo_cfg_versions = {}
         self.sensor_versions = {}
         self.sensor_serials = {}
         self.sys_version = "Unknown"
@@ -1495,27 +1497,38 @@ class App:
             side="right", padx=(20, 0))
 
     def create_status_bar(self):
-        """Create the bottom status bar"""
-        self.status_bar = tk.Frame(self.root, height=20)
+        """Create the bottom status bar with log on a separate row"""
+        self.status_bar = tk.Frame(self.root, height=35)
         self.status_bar.pack(side="bottom", fill="x")
+        self.status_bar.pack_propagate(False) 
 
+        self.status_bar.columnconfigure(0, weight=1) 
+        self.status_bar.columnconfigure(1, weight=0)
+        self.status_bar.columnconfigure(2, weight=0)
+        self.status_bar.columnconfigure(3, weight=1) 
+
+        # ==========Row 0==========
         self.which_robot_label = tk.Label(
-            self.status_bar, text=f"Robot type:", fg="black", font=("Arial", 9))
-        self.which_robot_label.pack(side="left", padx=(15, 150))
+            self.status_bar, text="Robot type:", fg="black", font=("Arial", 9))
+        self.which_robot_label.grid(row=0, column=0, sticky="w", padx=(15, 10))
 
         self.version_label = tk.Label(
-            self.status_bar, text=f"Controller version:", fg="black", font=("Arial", 9))
-        self.version_label.pack(side="left", padx=(0, 150))
+            self.status_bar, text="Controller version:", fg="black", font=("Arial", 9))
+        self.version_label.grid(row=0, column=1, sticky="w", padx=(0, 10))
 
         self.sdk_version_label = tk.Label(
             self.status_bar, text=f"SDK version:{self.sdk_version}", fg="black", font=("Arial", 9))
-        self.sdk_version_label.pack(side="left", padx=(0, 50))
+        self.sdk_version_label.grid(row=0, column=2, sticky="w", padx=(0, 50))
 
         self.time_label = tk.Label(
             self.status_bar, text="", fg="black", font=("Arial", 9))
-        self.time_label.pack(side="right", padx=15)
-        self.update_time()
+        self.time_label.grid(row=0, column=3, sticky="e", padx=15)
+        self.update_time()  
 
+        self.log_label = tk.Label(
+            self.status_bar, text="Controller Log:", fg="black", font=("Arial", 9))
+        self.log_label.grid(row=1, column=0, columnspan=4, sticky="w", padx=(15, 0))
+        self.update_log()  
     # ==================== Core Control Methods (Adapted to new MarvinRobot API) ====================
     def init_kd_variables(self):
         self.cart_k_b_entry = tk.StringVar(value="3000,3000,3000,100,100,100,50")
@@ -1607,6 +1620,7 @@ class App:
                         self.data_manager = RobotDataManager(robot)
                         self.update_data()
                         self.refresh_params_from_realtime_data()
+                        self.update_log()
 
                     elif ret_link==-1:
                         messagebox.showerror('Linked', f"Link is established, but no data arrived in 100ms,\n please check the cables and firewall ")
@@ -1628,6 +1642,8 @@ class App:
                     self.data_manager = None
 
                 self.connected = False
+                self._log_running = False
+                self.log_label.config(text="Controller log: (not connected)")
                 self._reset_ui_after_disconnect()
                 self.mode_btn.config(state="disabled")
             except Exception as e:
@@ -1674,17 +1690,22 @@ class App:
                                FXObjType.OBJ_BODY, FXObjType.OBJ_HEAD]
             for device, obj_type in zip(devices_servo, obj_types_servo):
                 try:
-                    ret,val = robot.get_ctrl_obj_servo_version(obj_type)
-                    if ret<0:
-                        self.servo_versions[device] =  f"Error: {robot._get_operate_error_msg(ret)}"
+                    ret, fw_versions, cfg_versions = robot.get_ctrl_obj_servo_version(obj_type)
+                    if ret < 0:
+                        self.servo_versions[device] = f"Error: {robot._get_operate_error_msg(ret)}"
+                        self.servo_cfg_versions[device] = f"Error: {robot._get_operate_error_msg(ret)}"
                         return
-                    if isinstance(val, (list, tuple)):
-                        val = ", ".join(str(v) for v in val)
-                    self.servo_versions[device] = str(val)
+                    fw_str = ", ".join(str(v) for v in fw_versions)
+                    cfg_str = ", ".join(str(v) for v in cfg_versions)
+                    self.servo_versions[device] = fw_str
+                    self.servo_cfg_versions[device] = cfg_str
                 except Exception as e:
                     self.servo_versions[device] = f"Error: {e}"
+                    self.servo_cfg_versions[device] = f"Error: {e}"
                 if hasattr(self, 'servo_version_labels') and device in self.servo_version_labels:
                     self.servo_version_labels[device].config(text=self.servo_versions[device])
+                if hasattr(self, 'servo_config_version_labels') and device in self.servo_config_version_labels:
+                    self.servo_config_version_labels[device].config(text=self.servo_cfg_versions[device])
 
             devices_sensor = ["Arm0", "Arm1", "Body"]
             obj_types_sensor = [FXObjType.OBJ_ARM0, FXObjType.OBJ_ARM1, FXObjType.OBJ_BODY]
@@ -2062,6 +2083,26 @@ class App:
         current_time = time.strftime("%Y-%m-%d %H:%M:%S")
         self.time_label.config(text=current_time)
         self.root.after(1000, self.update_time)
+
+    def update_log(self):
+        """Start a background thread that continuously reads system messages."""
+        if self._log_running:
+            return
+        self._log_running = True
+
+        def _poll_log():
+            while self._log_running:
+                try:
+                    ret, msg = robot.fbk_get_system_msg()
+                    if  msg:
+                        self.root.after(0, lambda m=msg: self.log_label.config(
+                            text=f"Controller log: {m}"))
+                except Exception:
+                    pass
+                time.sleep(0.5)
+
+        t = threading.Thread(target=_poll_log, daemon=True)
+        t.start()
 
     def on_mousewheel(self, event):
         self.main_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -3223,6 +3264,8 @@ class App:
         # menu.add_command(label="FileClient", command=self.file_client_dialog)
         menu.add_separator()
         menu.add_command(label="System Upgrade", command=self.system_update_dialog)
+        menu.add_separator()
+        menu.add_command(label="Config IP",command=self.config_ip_dialog)
         # menu.add_separator()
         # menu.add_command(label="Docs", )#command=self.open_doc()
         try:
@@ -3360,7 +3403,7 @@ class App:
             return
         servo_sensor_version_window = tk.Toplevel(self.root)
         servo_sensor_version_window.title("Version")
-        servo_sensor_version_window.geometry("1000x600")
+        servo_sensor_version_window.geometry("1000x800")
         servo_sensor_version_window.configure(bg="white")
         servo_sensor_version_window.transient(self.root)
         servo_sensor_version_window.resizable(True, True)
@@ -3396,6 +3439,7 @@ class App:
 
         devices_servo = ["Arm0", "Arm1", "Body", "Head"]
         self.servo_version_labels = {}
+        self.servo_config_version_labels = {}
         for device in devices_servo:
             row_frame = tk.Frame(ss_frame1, bg="white")
             row_frame.pack(fill="x", padx=20, pady=2)
@@ -3405,6 +3449,15 @@ class App:
                                  font=("Arial", 9), anchor='w')
             val_label.pack(side="left", fill="x", expand=True, padx=5)
             self.servo_version_labels[device] = val_label
+
+            row_cfg = tk.Frame(ss_frame1, bg="white")
+            row_cfg.pack(fill="x", padx=20, pady=(0, 2))
+            label_cfg = tk.Label(row_cfg, text=f"{device} config:", width=12, anchor='w', bg="white")
+            label_cfg.pack(side="left")
+            cfg_label = tk.Label(row_cfg, text="", bg="white", fg="black",
+                                 font=("Arial", 9), anchor='w')
+            cfg_label.pack(side="left", fill="x", expand=True, padx=5)
+            self.servo_config_version_labels[device] = cfg_label
 
         # ---------- Sensor version & Serial section ----------
         ss_frame2 = tk.Frame(servo_sensor_version_window, bg="white")
@@ -3464,6 +3517,9 @@ class App:
         for device in self.servo_version_labels:
             self.servo_version_labels[device].config(
                 text=getattr(self, 'servo_versions', {}).get(device, 'Not connected'))
+        for device in self.servo_config_version_labels:
+            self.servo_config_version_labels[device].config(
+                text=getattr(self, 'servo_cfg_versions', {}).get(device, 'Not connected'))
         for device in self.sensor_version_labels:
             self.sensor_version_labels[device].config(
                 text=getattr(self, 'sensor_versions', {}).get(device, 'Not connected'))
@@ -5835,6 +5891,110 @@ class App:
                 return
         except Exception as e:
             messagebox.showerror('Error', f"Brake lock failed: {e}")
+    def config_ip_dialog(self):
+        # if not self.connected:
+        #     messagebox.showerror('Error', "Please connect robot first!")
+        #     return
+
+        config_ip_window = tk.Toplevel(self.root)
+        config_ip_window.title("Config IP Address")
+        config_ip_window.geometry("500x280")
+        config_ip_window.configure(bg="white")
+        config_ip_window.transient(self.root)
+        config_ip_window.resizable(False, False)
+        config_ip_window.grab_set()
+
+        # ---------- Title ----------
+        title_frame = tk.Frame(config_ip_window, bg="white")
+        title_frame.pack(fill="x", padx=5, pady=(15, 10))
+        tk.Label(title_frame, text="Modify Robot IP Address", bg="#2196F3",
+                 fg="white", font=("Arial", 10, "bold")).pack(fill='x')
+
+        # ---------- Current IP ----------
+        current_frame = tk.Frame(config_ip_window, bg="white")
+        current_frame.pack(fill="x", padx=20, pady=(10, 5))
+        tk.Label(current_frame, text="Current IP:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        current_ip_label = tk.Label(current_frame, text="", bg="white", fg="#2196F3",
+                                    font=("Arial", 10, "bold"), anchor='w')
+        current_ip_label.pack(side="left", fill="x", expand=True, padx=5)
+
+        ret, cur_ip = robot.get_system_ip()
+        if ret == 0 and cur_ip:
+            current_ip_label.config(text=cur_ip)
+        else:
+            current_ip_label.config(text="Failed to get IP")
+
+        # ---------- New IP entry ----------
+        new_ip_frame = tk.Frame(config_ip_window, bg="white")
+        new_ip_frame.pack(fill="x", padx=20, pady=(15, 5))
+        tk.Label(new_ip_frame, text="New IP:", width=12, anchor='w', bg="white",
+                 font=("Arial", 10)).pack(side="left")
+        new_ip_var = tk.StringVar()
+        new_ip_entry = tk.Entry(new_ip_frame, textvariable=new_ip_var, width=20,
+                                font=("Arial", 10))
+        new_ip_entry.pack(side="left", padx=5)
+        tk.Label(new_ip_frame, text="e.g. 192.168.1.100", bg="white",
+                 fg="gray", font=("Arial", 8)).pack(side="left")
+
+        # ---------- Hint ----------
+        hint_frame = tk.Frame(config_ip_window, bg="white")
+        hint_frame.pack(fill="x", padx=20, pady=(5, 5))
+        tk.Label(hint_frame, text="After modification, the system will restart.\n"
+                                  "You will need to reconnect with the new IP.",
+                 bg="white", fg="#F44336", font=("Arial", 8), anchor='w',
+                 justify='left').pack(fill="x")
+
+        # ---------- Buttons ----------
+        def apply_new_ip():
+            ip_str = new_ip_var.get().strip()
+            if not ip_str:
+                messagebox.showerror("Error", "Please enter a new IP address!")
+                return
+
+            # Validate IPv4 format
+            pattern = re.compile(
+                r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
+                r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+            if not pattern.match(ip_str):
+                messagebox.showerror("IP Error",
+                                     f"'{ip_str}' is not a valid IPv4 address.\n"
+                                     "Please enter a valid IP, e.g. 192.168.1.100")
+                return
+
+            ip_parts = [int(x) for x in ip_str.split('.')]
+            if not messagebox.askyesno("Confirm",
+                                       f"Set robot IP to {ip_str}?\n\n"
+                                       "The system will restart after changing the IP.\n"
+                                       "You will need to reconnect manually."):
+                return
+
+            try:
+                ret = robot.set_system_ip(ip_parts)
+                if ret == 0:
+                    messagebox.showinfo("Success",
+                                        f"IP address set to {ip_str}.\n"
+                                        "The system will restart.\n"
+                                        "Please reconnect using the new IP after the robot restarts.")
+                    # Update the main UI's IP entry field
+                    self.arm_ip_entry.delete(0, tk.END)
+                    self.arm_ip_entry.insert(0, ip_str)
+                    config_ip_window.destroy()
+                else:
+                    messagebox.showerror("Failed",
+                                         f"Failed to set IP address.\n"
+                                         f"Error: {robot._get_operate_error_msg(ret)}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to set IP: {e}")
+
+        btn_frame = tk.Frame(config_ip_window, bg="white")
+        btn_frame.pack(pady=20)
+        tk.Button(btn_frame, text="Apply", width=12,
+                  font=("Arial", 11, "bold"), bg="#4CAF50", fg="white",
+                  command=apply_new_ip).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="Cancel", width=12,
+                  font=("Arial", 11), bg="#9E9E9E", fg="white",
+                  command=config_ip_window.destroy).pack(side="left", padx=10)
 
     def system_update_dialog(self):
         if not self.connected:
@@ -6232,7 +6392,6 @@ if __name__ == "__main__":
     data_queue = queue.Queue()
     crr_pth = os.getcwd()
     robot = GentoRobot()
-    robot.enable_lock()
     sdk_version = robot.get_sdk_version()
 
     root = tk.Tk()

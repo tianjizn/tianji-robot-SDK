@@ -40,7 +40,9 @@ extern "C"
    * @param[in] ip2 Second octet of the target IPv4 address.
    * @param[in] ip3 Third octet of the target IPv4 address.
    * @param[in] ip4 Fourth octet of the target IPv4 address.
-   * @return 0 on success, -1 on failure.
+   * @return 0 values indicate success.
+   *        -1 values indicate link is not established.
+   *        -2 values indicate the request is rejected by the controller.
    */
   CONTROL_SDK_API int FX_L0_System_RequestControl(unsigned char ip1,
                                           unsigned char ip2,
@@ -154,6 +156,52 @@ extern "C"
    * @return 0 on success, -1 on failure.
    */
   CONTROL_SDK_API void FX_L0_System_LocalLogOff(void);
+
+  /**
+   * @brief Set the system time on the controller.
+   *
+   * Configures the controller's real-time clock to the specified date and time.
+   *
+   * @param year   Year value (e.g., 2024).
+   * @param month  Month value (1–12).
+   * @param day    Day value (1–31, depending on month and year).
+   * @param hour   Hour value (0–23).
+   * @param minute Minute value (0–59).
+   * @param second Second value (0–59).
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_SetSystemTime(int year, int month, int day, int hour, int minute, int second);
+  /**
+   * @brief Get the current system time from the controller.
+   *
+   * Retrieves the controller's current date and time as a formatted string.
+   *
+   * @param time_str Buffer to receive the time string. The buffer must be at
+   *                 least 20 characters long. The format is typically
+   *                 "YYYY-MM-DD HH:MM:SS" (null-terminated).
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_GetSystemTime(char time_str[20]);
+  /**
+   * @brief Set the system network configuration on the controller.
+   *
+   * Configures the controller's IPv4 address.
+   *
+   * @param ip      IPv4 address as an array of 4 bytes, e.g., {192, 168, 1, 10}.
+   *                If no gateway is needed, set all elements to 0.
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_SetSystemIP(int ip[4]);
+  /**
+   * @brief Get the current system network configuration from the controller.
+   *
+   * Retrieves the controller's current IPv4 address, subnet mask, and default
+   * gateway.
+   *
+   * @param[out] ip_str  Buffer to receive the IPv4 address, e.g., "192.168.1.190".
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_System_GetSystemIP(char ip_str[20]);
 
   /* =========================================================
    * Parameter Management APIs
@@ -334,7 +382,7 @@ extern "C"
    * @param version Output buffer for version string.
    * @return 0 on success, -1 on failure.
    */
-  CONTROL_SDK_API int FX_L0_Arm0_State_GetServoVersion(int axis_id,
+  CONTROL_SDK_API int FX_L0_Arm0_State_GetServoFirmwareVersion(int axis_id,
                                                        char version[30]);
 
   /**
@@ -344,7 +392,7 @@ extern "C"
    * @param version Output buffer for version string.
    * @return 0 on success, -1 on failure.
    */
-  CONTROL_SDK_API int FX_L0_Arm1_State_GetServoVersion(int axis_id,
+  CONTROL_SDK_API int FX_L0_Arm1_State_GetServoFirmwareVersion(int axis_id,
                                                        char version[30]);
 
   /**
@@ -354,7 +402,7 @@ extern "C"
    * @param version Output buffer for version string.
    * @return 0 on success, -1 on failure.
    */
-  CONTROL_SDK_API int FX_L0_Head_State_GetServoVersion(int axis_id,
+  CONTROL_SDK_API int FX_L0_Head_State_GetServoFirmwareVersion(int axis_id,
                                                        char version[30]);
 
   /**
@@ -364,8 +412,44 @@ extern "C"
    * @param version Output buffer for version string.
    * @return 0 on success, -1 on failure.
    */
-  CONTROL_SDK_API int FX_L0_Body_State_GetServoVersion(int axis_id,
+  CONTROL_SDK_API int FX_L0_Body_State_GetServoFirmwareVersion(int axis_id,
                                                        char version[30]);
+
+  /**
+    * @brief Retrieve servo config version for a specific axis of Arm0.
+    *
+    * @param axis_id Axis identifier.
+    * @param version Output number for version.
+    * @return 0 on success, -1 on failure.
+    */
+  CONTROL_SDK_API int FX_L0_Arm0_State_GetServoConfigVersion(int axis_id, unsigned int* version);
+
+  /**
+    * @brief Retrieve servo config version for a specific axis of Arm1.
+    *
+    * @param axis_id Axis identifier.
+    * @param version Output number for version.
+    * @return 0 on success, -1 on failure.
+    */
+  CONTROL_SDK_API int FX_L0_Arm1_State_GetServoConfigVersion(int axis_id, unsigned int* version);
+
+  /**
+    * @brief Retrieve servo config version for a specific axis of Head.
+    *
+    * @param axis_id Axis identifier.
+    * @param version Output number for version.
+    * @return 0 on success, -1 on failure.
+    */
+  CONTROL_SDK_API int FX_L0_Head_State_GetServoConfigVersion(int axis_id, unsigned int* version);
+
+  /**
+    * @brief Retrieve servo config version for a specific axis of Body.
+    *
+    * @param axis_id Axis identifier.
+    * @param version Output number for version.
+    * @return 0 on success, -1 on failure.
+    */
+  CONTROL_SDK_API int FX_L0_Body_State_GetServoConfigVersion(int axis_id, unsigned int* version);
 
   /**
    * @brief Retrieve sensor firmware version for a specific axis of Arm0.
@@ -1523,6 +1607,28 @@ extern "C"
    * @return Pointer to ROBOT_SG structure, or NULL on failure.
    */
   CONTROL_SDK_API const ROBOT_SG *FX_L0_GetRobotSG(void);
+
+  /**
+   * @brief Clear all system message.
+   *
+   * This function clears or resets the internal system message context.
+   * It is typically used during initialization or after processing a 
+   * system-level notification.
+   *
+   * @return 0 on success, -1 on failure.
+   */
+  CONTROL_SDK_API int FX_L0_ResetSystemMsg();
+  
+  /**
+   * @brief Retrieve the current system message.
+   *
+   * @param[out] msg         Buffer to receive the system message string.
+   * @param[in]  max_msg_len Maximum size of the message buffer, including the null terminator.
+   *
+   * @return >0: message length in byte.
+   *          0: no more message arrived.
+   */
+  CONTROL_SDK_API int FX_L0_GetSystemMsg(char* msg, int max_msg_len);
 
 #ifdef __cplusplus
 }

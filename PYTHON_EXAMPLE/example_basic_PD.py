@@ -48,7 +48,7 @@ def load_trajectory():
         print(f"Warning: trajectory source not found at {cpp_path}")
         return None
 
-    with open(cpp_path, 'r') as f:
+    with open(cpp_path, 'r', encoding='utf-8', errors='replace') as f:
         content = f.read()
 
     match = re.search(r'double pos_array\[TRAJ_POINT_NUM\]\[7\]\s*=\s*\{([^}]+(?:{[^}]*}[^}]*)*)\};', content)

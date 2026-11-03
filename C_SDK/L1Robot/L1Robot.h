@@ -188,7 +188,62 @@ extern "C"
      */
     FX_L1_SDK_API int FX_L1_System_RecvFile(char *local_file_path,
                                             char *remote_file_path);
-
+    /**
+     * @brief Set the system time on the controller.
+     *
+     * Configures the controller's real-time clock to the specified date and time.
+     *
+     * @param year   Year value (e.g., 2024).
+     * @param month  Month value (1–12).
+     * @param day    Day value (1–31, depending on month and year).
+     * @param hour   Hour value (0–23).
+     * @param minute Minute value (0–59).
+     * @param second Second value (0–59).
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_SetSystemTime(int year, int month, int day, int hour, int minute, int second);
+    
+    /**
+     * @brief Get the current system time from the controller.
+     *
+     * Retrieves the controller's current date and time as a formatted string.
+     *
+     * @param time_str Buffer to receive the time string. The buffer must be at
+     *                 least 20 characters long. The format is typically
+     *                 "YYYY-MM-DD HH:MM:SS" (null-terminated).
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_GetSystemTime(char time_str[20]);
+    
+    /**
+     * @brief Set the system network configuration on the controller.
+     *
+     * Configures the controller's IPv4 address, subnet mask, and default gateway.
+     *
+     * @param ip      IPv4 address as an array of 4 bytes, e.g., {192, 168, 1, 10}.
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_SetSystemIP(int ip[4]);
+    
+    /**
+     * @brief Get the current system network configuration from the controller.
+     *
+     * Retrieves the controller's current IPv4 address, subnet mask, and default
+     * gateway.
+     *
+     * @param[out] ip_str  Buffer to receive the IPv4 address, e.g., "192.168.1.190".
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_System_GetSystemIP(char ip_str[20]);
+    
     /* =========================================================
      * Feedback APIs
      * ========================================================= */
@@ -202,16 +257,17 @@ extern "C"
     FX_L1_SDK_API int FX_L1_Fbk_GetCtrlObjDof(FXObjType obj_type);
 
     /**
-     * @brief Retrieve servo firmware versions for a control object.
+     * @brief Retrieve servo versions for a control object.
      *
      * @param obj_type Target object type.
-     * @param version Output buffer for version strings.
+     * @param firmware_version Output buffer for servo firmware version strings.
+     * @param config_version Output buffer for servo config version.
      * @return Defined in FXFuncReturn.
      *
      * @see FXFuncReturn
      */
     FX_L1_SDK_API int FX_L1_Fbk_GetCtrlObjServoVersion(FXObjType obj_type,
-                                                        char version[7][30]);
+                                                        char firmware_version[7][30], unsigned int config_version[7]);
 
     /**
      * @brief Retrieve sensor firmware versions and serial numbers.
@@ -315,6 +371,29 @@ extern "C"
      * @see FXFuncReturn
      */
     FX_L1_SDK_API int FX_L1_Fbk_CheckUserDataSet(int user_data_len);
+    /**
+     * @brief Clear all system message.
+     *
+     * This function clears or resets the internal system message context.
+     * It is typically used during initialization or after processing a 
+     * system-level notification.
+     *
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_Fbk_ResetSystemMsg();
+    /**
+     * @brief Retrieve the current system message.
+     *
+     * @param[out] msg         Buffer to receive the system message string.
+     * @param[in]  max_msg_len Maximum size of the message buffer, including the null terminator.
+     *
+     * @return Defined in FXFuncReturn.
+     *
+     * @see FXFuncReturn
+     */
+    FX_L1_SDK_API int FX_L1_Fbk_GetSystemMsg(char* msg, int max_msg_len);
 
     /**
      * @brief Retrieve servo error codes for a control object.
